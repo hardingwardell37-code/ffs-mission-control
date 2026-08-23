@@ -1,0 +1,2 @@
+import { requireContext } from "@/lib/auth";
+export default async function SettingsPage(){const {supabase,organizationId,user,role}=await requireContext(); const {data}=await supabase.from("organizations").select("name,slug").eq("id",organizationId).single(); return <><div className="eyebrow">Control plane</div><h1>Settings</h1><div className="panel section"><div className="label">Organization</div><h2>{data?.name??"Organization"}</h2><p className="muted">{data?.slug} · role: {role}</p><div className="label section">Authenticated operator</div><p>{user.email}</p></div></>}

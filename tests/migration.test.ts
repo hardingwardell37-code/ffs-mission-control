@@ -1,0 +1,3 @@
+import { readFileSync } from "node:fs"; import { describe, expect, it } from "vitest";
+const sql=readFileSync(new URL("../supabase/migrations/0002_governed_registry.sql",import.meta.url),"utf8");
+describe("organization isolation migration",()=>{it("removes broad foundation policies",()=>expect(sql).toContain('drop policy if exists "authenticated users manage agents"')); it("scopes every owned table",()=>{for(const table of ["agents","tasks","approvals","audit_events"]) expect(sql).toContain(`alter table public.${table} add column organization_id`)}); it("prevents audit updates and deletes",()=>expect(sql).toContain("audit_events_no_update_delete"));});
