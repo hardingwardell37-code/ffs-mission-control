@@ -50,8 +50,8 @@ export async function createTask(form: FormData) {
   revalidatePath("/tasks"); redirect("/tasks");
 }
 
-export async function resolveApproval(form: FormData) {
-  const ctx = await requireContext(); const id = String(form.get("id") ?? ""); const next = String(form.get("status") ?? "") as ApprovalStatus;
+async function resolveApproval(form: FormData, next: ApprovalStatus) {
+  const ctx = await requireContext(); const id = String(form.get("id") ?? "");
   const { data: approval, error: readError } = await ctx.supabase.from("approvals").select("status").eq("id", id).eq("organization_id", ctx.organizationId).single();
   if (readError) throw new Error(readError.message); assertApprovalResolution(approval.status, next);
   const { error } = await ctx.supabase.from("approvals").update({ status: next, resolved_at: new Date().toISOString(), resolved_by: ctx.user.id, resolution_note: String(form.get("note") ?? "").slice(0, 1000) }).eq("id", id).eq("status", "pending");
@@ -59,5 +59,9 @@ export async function resolveApproval(form: FormData) {
   await writeAudit(ctx.supabase, { organizationId: ctx.organizationId, actorId: ctx.user.id, eventType: `approval.${next}`, entityType: "approval", entityId: id });
   revalidatePath("/approvals");
 }
+
+export async function approveApproval(form: FormData) { return resolveApproval(form, "approved"); }
+export async function rejectApproval(form: FormData) { return resolveApproval(form, "rejected"); }
+export async function cancelApproval(form: FormData) { return resolveApproval(form, "cancelled"); }
 
 export async function signOut() { const { supabase } = await requireContext(); await supabase.auth.signOut(); redirect("/login"); }
