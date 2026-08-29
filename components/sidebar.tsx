@@ -3,6 +3,8 @@ import Link from "next/link";
 const items = [
   ["/", "Command Center"],
   ["/agents", "Agents"],
+  ["/skills", "Skills"],
+  ["/crm", "CRM"],
   ["/tasks", "Tasks"],
   ["/approvals", "Approvals"],
   ["/activity", "Activity"],

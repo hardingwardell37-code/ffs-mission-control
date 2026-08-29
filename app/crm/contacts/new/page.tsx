@@ -1,0 +1,2 @@
+import {ContactForm} from "@/components/crm-forms";import {createContact} from "@/lib/actions";import {getCrmOptions} from "@/lib/crm";import {requireContext} from "@/lib/auth";
+export default async function NewContact(){const {supabase,organizationId}=await requireContext();const options=await getCrmOptions(supabase,organizationId);return <><div className="eyebrow">CRM / Contacts</div><h1>Add contact</h1><p className="lede">Email is optional; organization integrity is enforced in the database.</p><ContactForm action={createContact} companies={options.companies}/></>}

@@ -1,0 +1,2 @@
+import {CompanyForm} from "@/components/crm-forms";import {createCompany} from "@/lib/actions";import {getCrmOptions} from "@/lib/crm";import {requireContext} from "@/lib/auth";
+export default async function NewCompany(){const {supabase,organizationId}=await requireContext();const {owners}=await getCrmOptions(supabase,organizationId);return <><div className="eyebrow">CRM / Companies</div><h1>Add company</h1><p className="lede">Create an organization-scoped account record.</p><CompanyForm action={createCompany} owners={owners}/></>}

@@ -13,4 +13,4 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/((?!api/health|login|auth|_next/static|_next/image|favicon.ico).*)"] };
+export const config = { matcher: ["/((?!api/health|login|forgot-password|reset-password|auth|_next/static|_next/image|favicon.ico).*)"] };
