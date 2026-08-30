@@ -5,7 +5,8 @@ import { writeAudit } from "@/lib/audit";
 import { requireContext } from "@/lib/auth";
 import { modeForIntent, parseLeadCommand, previewAllowsIntent, type LeadIntent, type LeadMode } from "@/lib/domain/lead-agent";
 import { governModelProposal } from "@/lib/domain/lead-agent-policy";
-import { createLeadModelProvider, type SafeLeadContext } from "@/lib/lead-agent-provider";
+import type { AgentIntelligenceContext, AgentProposal } from "@/lib/domain/agent-intelligence";
+import { createLeadModelProvider } from "@/lib/lead-agent-provider";
 import { parseTask } from "@/lib/validation";
 
 export type LeadAgentState = { mode: LeadMode | null; response: string; action: string; approval: string };
@@ -38,21 +39,29 @@ async function resolveCommand(ctx: CommandContext, command: string): Promise<{ i
   const provider = createLeadModelProvider();
   if (!provider) return { intent: parseLeadCommand(command), model: null };
   const [agentResult, taskResult, approvalResult, eventResult] = await Promise.all([
-    ctx.supabase.from("agents").select("name, status").eq("organization_id", ctx.organizationId).is("archived_at", null).limit(30),
+    ctx.supabase.from("agents").select("id, name, status, department, purpose, agent_skills(skills(id, name))").eq("organization_id", ctx.organizationId).is("archived_at", null).limit(30),
     ctx.supabase.from("tasks").select("title, status, agents(name)").eq("organization_id", ctx.organizationId).order("created_at", { ascending: false }).limit(30),
     ctx.supabase.from("approvals").select("action_key, status, tasks(title)").eq("organization_id", ctx.organizationId).order("requested_at", { ascending: false }).limit(20),
     ctx.supabase.from("audit_events").select("event_type, entity_type, created_at").eq("organization_id", ctx.organizationId).order("created_at", { ascending: false }).limit(15),
   ]);
   if (agentResult.error || taskResult.error || approvalResult.error || eventResult.error) return { intent: parseLeadCommand(command), model: null };
-  const safeContext: SafeLeadContext = {
-    agents: (agentResult.data ?? []).map((agent) => ({ name: agent.name, status: agent.status })),
-    tasks: (taskResult.data ?? []).map((task) => ({ title: task.title, status: task.status, agentName: relationName(task.agents) ?? null })),
-    approvals: (approvalResult.data ?? []).map((approval) => ({ title: relationName(approval.tasks) ?? "Task", action: approval.action_key, status: approval.status })),
-    events: (eventResult.data ?? []).map((event) => ({ type: event.event_type, entity: event.entity_type, timestamp: event.created_at })),
+  const organizationAgents = (agentResult.data ?? []).map((agent) => ({ id: agent.id, name: agent.name, status: agent.status, department: agent.department, role: agent.purpose, skills: (agent.agent_skills ?? []).map((assignment) => relationName(assignment.skills)).filter((name): name is string => Boolean(name)) }));
+  const safeContext: AgentIntelligenceContext = {
+    agent: { id: "lead-agent", name: "Lead Agent", department: "Operations", role: "Mission Control orchestrator", purpose: "Interpret objectives, select specialists, coordinate governed work, and synthesize results.", skills: [], tools: [] },
+    currentTask: null,
+    organization: {
+      agents: organizationAgents,
+      tasks: (taskResult.data ?? []).map((task) => ({ title: task.title, status: task.status, agentName: relationName(task.agents) ?? null })),
+      approvals: (approvalResult.data ?? []).map((approval) => ({ title: relationName(approval.tasks) ?? "Task", action: approval.action_key, status: approval.status })),
+      events: (eventResult.data ?? []).map((event) => ({ type: event.event_type, entity: event.entity_type, timestamp: event.created_at })),
+    },
+    governance: { previewMode: ctx.previewMode, directMutationAllowed: false, externalActionsRequireApproval: true },
   };
   const result = await provider.propose(command, safeContext);
   if (!result) return { intent: parseLeadCommand(command), model: null };
-  const governed = governModelProposal(command, result.proposal, { agentNames: safeContext.agents.map((agent) => agent.name), taskTitles: safeContext.tasks.map((task) => task.title), previewMode: ctx.previewMode });
+  const shared = result.proposal as AgentProposal;
+  const proposal = { intent: shared.interpretedIntent === "specialist_work" ? "clarify" as const : shared.interpretedIntent, responseMode: shared.responseMode, targetAgent: shared.targetAgent, targetTask: shared.targetTask, proposedAction: shared.proposedAction, confidence: shared.confidence, explanation: shared.explanation };
+  const governed = governModelProposal(command, proposal, { agentNames: safeContext.organization.agents.map((agent) => agent.name), taskTitles: safeContext.organization.tasks.map((task) => task.title), previewMode: ctx.previewMode });
   return { intent: governed.intent, model: { provider: result.provider, model: result.model } };
 }
 
