@@ -19,6 +19,7 @@ export function governAgentProposal(proposal: AgentProposal | null, context: Age
   if (proposal.interpretedIntent === "destructive_action") return { ...proposal, responseMode: "REFUSE", blocker: "Destructive action is outside agent authority.", approvalRequired: false, accepted: false };
   if (proposal.interpretedIntent === "external_action" || proposal.approvalRequired) return { ...proposal, responseMode: "REQUIRE_APPROVAL", approvalRequired: true, accepted: false };
   if (proposal.confidence === "low" || proposal.clarificationRequest) return { ...proposal, responseMode: "CLARIFY", accepted: false };
+  if (context.governance.previewMode && ["EXECUTE", "DELEGATE", "REQUIRE_APPROVAL"].includes(proposal.responseMode)) return { ...proposal, responseMode: "REFUSE", blocker: "Deploy Preview is read-only.", accepted: false };
   if (proposal.responseMode === "DELEGATE") {
     if (!proposal.targetAgent || !context.organization.agents.some((agent) => same(agent.name, proposal.targetAgent!))) return { ...proposal, responseMode: "CLARIFY", clarificationRequest: "Identify one registered handoff destination.", accepted: false };
     return { ...proposal, accepted: true };
@@ -29,6 +30,5 @@ export function governAgentProposal(proposal: AgentProposal | null, context: Age
     if (!permission.allowed) return { ...proposal, responseMode: proposal.targetAgent ? "DELEGATE" : "REFUSE", blocker: permission.reason, accepted: false };
     if (permission.requiresApproval) return { ...proposal, responseMode: "REQUIRE_APPROVAL", approvalRequired: true, accepted: false };
   }
-  if (context.governance.previewMode && proposal.responseMode === "EXECUTE") return { ...proposal, responseMode: "REFUSE", blocker: "Deploy Preview is read-only.", accepted: false };
   return { ...proposal, accepted: true };
 }

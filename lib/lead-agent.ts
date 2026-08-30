@@ -7,6 +7,8 @@ import { modeForIntent, parseLeadCommand, previewAllowsIntent, type LeadIntent, 
 import { governModelProposal } from "@/lib/domain/lead-agent-policy";
 import type { AgentIntelligenceContext, AgentProposal } from "@/lib/domain/agent-intelligence";
 import { createLeadModelProvider } from "@/lib/lead-agent-provider";
+import { executeSpecialistStep } from "@/lib/specialist-execution";
+import { handoffTask } from "@/lib/task-runtime";
 import { parseTask } from "@/lib/validation";
 
 export type LeadAgentState = { mode: LeadMode | null; response: string; action: string; approval: string };
@@ -131,11 +133,11 @@ export async function runLeadAgentCommand(_previous: LeadAgentState, formData: F
     const task = uniqueMatch((tasks ?? []) as NamedRecord[], intent.taskQuery, "title");
     if (!task) return { mode: "CLARIFY", response: `Identify one running task matching “${intent.taskQuery}”.`, action: "No action taken", approval: "Not required" };
     await writeAudit(ctx.supabase, { organizationId: ctx.organizationId, actorId: ctx.user.id, eventType: "lead.command_received", entityType: "command", metadata: { interpretedAs: intent.kind, result: "accepted", approvalRequirement: "none", provider: resolved.model?.provider ?? "deterministic", model: resolved.model?.model ?? null } });
-    const { error } = await ctx.supabase.rpc("record_task_runtime_handoff", { p_task_id: task.id, p_destination_agent_id: agent.id, p_summary: `Lead Agent delegated ${task.title} to ${agent.name}.` });
-    if (error) throw error;
+    await handoffTask(task.id, agent.id, `Lead Agent delegated ${task.title} to ${agent.name}.`);
+    const specialist = await executeSpecialistStep(agent.id, task.id, command);
     await writeAudit(ctx.supabase, { organizationId: ctx.organizationId, actorId: ctx.user.id, eventType: "lead.command_executed", entityType: "task", entityId: task.id, metadata: { interpretedAs: intent.kind, result: "handoff_recorded", finalResponseMode: "DELEGATE", approvalRequirement: "none", destinationAgentId: agent.id, provider: resolved.model?.provider ?? "deterministic", model: resolved.model?.model ?? null } });
     revalidatePath("/"); revalidatePath("/tasks"); revalidatePath("/activity");
-    return { mode: "DELEGATE", response: `Handed off “${task.title}” to ${agent.name}.`, action: "Governed runtime handoff recorded", approval: "Not required" };
+    return { mode: "DELEGATE", response: `Handed off “${task.title}” to ${agent.name}. ${specialist.blocker ?? specialist.clarification ?? specialist.result ?? specialist.action}`, action: `Governed handoff · ${specialist.responseMode}`, approval: specialist.approvalRequired ? "Required" : "Not required" };
   } catch {
     return { mode: "CLARIFY", response: "Mission Control could not complete that bounded command. Verify the referenced operational records and try again.", action: "No confirmed state change", approval: "Not assessed" };
   }
