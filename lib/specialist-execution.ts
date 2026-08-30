@@ -11,7 +11,7 @@ type Relation<T> = T | T[] | null;
 const one = <T,>(value: Relation<T>) => Array.isArray(value) ? value[0] ?? null : value;
 export type SpecialistExecutionResult = { agent: string; task: string; responseMode: string; action: string; result: string | null; confidence: string; blocker: string | null; clarification: string | null; approvalRequired: boolean; handoffDestination: string | null };
 
-export async function executeSpecialistStep(agentId: string, taskId: string, instruction: string): Promise<SpecialistExecutionResult> {
+export async function executeSpecialistStep(agentId: string, taskId: string, instruction: string, options: { deferCompletion?: boolean; allowedHandoffAgentNames?: string[] } = {}): Promise<SpecialistExecutionResult> {
   const ctx = await requireContext();
   const [agentResult, taskResult, agentsResult, tasksResult, approvalsResult, eventsResult] = await Promise.all([
     ctx.supabase.from("agents").select("id, name, department, purpose, status, agent_skills(skills(id, name)), agent_tool_permissions(tool_key, can_read, can_write, requires_approval)").eq("id", agentId).eq("organization_id", ctx.organizationId).eq("status", "active").is("archived_at", null).single(),
@@ -31,12 +31,14 @@ export async function executeSpecialistStep(agentId: string, taskId: string, ins
 
   let action = "No runtime mutation";
   if (directive.kind === "start") { await startTask(taskId); action = "Task started"; }
-  if (directive.kind === "complete") { await completeTask(taskId, "report", `${agentResult.data.name} result`, directive.summary!); action = "Task completed"; }
+  if (directive.kind === "complete" && options.deferCompletion) action = "Completion proposed";
+  else if (directive.kind === "complete") { await completeTask(taskId, "report", `${agentResult.data.name} result`, directive.summary!); action = "Task completed"; }
   if (directive.kind === "block") { await blockTask(taskId, directive.summary!); action = "Task blocked"; }
   if (directive.kind === "approval") { await audit("specialist.approval_required", { agentId, actionKey: directive.actionKey }); await requestTaskApproval(taskId, directive.actionKey!, directive.summary!); action = "Approval requested"; }
   if (directive.kind === "handoff") {
     const destination = (agentsResult.data ?? []).find((agent) => agent.name.toLowerCase() === directive.destination!.toLowerCase());
     if (!destination) throw new Error("Handoff destination is unavailable");
+    if (options.allowedHandoffAgentNames && !options.allowedHandoffAgentNames.some((name) => name.toLowerCase() === destination.name.toLowerCase())) return { agent: agentResult.data.name, task: taskResult.data.title, responseMode: "REFUSE", action: "Handoff blocked", result: null, confidence: intelligence.governed.confidence, blocker: "Repeated or self-directed handoff blocked.", clarification: null, approvalRequired: false, handoffDestination: destination.name };
     await audit("specialist.handoff_initiated", { agentId, destinationAgentId: destination.id });
     await handoffTask(taskId, destination.id, directive.summary!); action = `Handed off to ${destination.name}`;
     await audit("specialist.handoff_completed", { agentId, destinationAgentId: destination.id });
