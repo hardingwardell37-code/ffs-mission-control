@@ -12,49 +12,47 @@ export type OperationApproval = { id: string; task_id: string; action_key: strin
 export type OperationEvent = { id: string; event_type: string; entity_type: string; entity_id?: string | null; created_at: string; metadata?: Record<string, unknown> | null };
 type Selection = { kind: "task" | "agent"; id: string } | null;
 
-const activeStatuses = ["draft", "queued", "running", "handoff", "review", "blocked", "awaiting_approval"];
 const demoSequence = [
-  { label: "Queued", status: "queued", agentId: "demo-research", event: "demo.queued" },
-  { label: "Working", status: "running", agentId: "demo-research", event: "demo.started" },
-  { label: "Handoff", status: "handoff", agentId: "demo-content", event: "demo.handoff" },
-  { label: "Review", status: "review", agentId: "demo-reviewer", event: "demo.review" },
-  { label: "Approval", status: "awaiting_approval", agentId: "demo-reviewer", event: "approval.requested" },
-  { label: "Completed", status: "completed", agentId: "demo-content", event: "demo.completed" },
+  { label: "Queued", status: "queued", agentId: "demo-intel", event: "Campaign entered operations", communication: "Mission Control → Market Intelligence\nResearch brief queued", route: -1 },
+  { label: "Research", status: "running", agentId: "demo-intel", event: "Market Intelligence activated", communication: "Market Intelligence\nAudience signals being analyzed", route: -1 },
+  { label: "Handoff", status: "handoff", agentId: "demo-strategy", event: "Research handoff completed", communication: "Market Intelligence → Content Strategist\nResearch packet delivered", route: 0 },
+  { label: "Strategy", status: "running", agentId: "demo-strategy", event: "Campaign strategy drafted", communication: "Content Strategist\nCampaign direction assembled", route: -1 },
+  { label: "Handoff", status: "handoff", agentId: "demo-copy", event: "Creative brief transferred", communication: "Content Strategist → Copy Chief\nCreative brief ready", route: 1 },
+  { label: "Creative", status: "running", agentId: "demo-copy", event: "Copy Chief activated", communication: "Copy Chief\nCampaign concept in production", route: -1 },
+  { label: "Review", status: "review", agentId: "demo-review", event: "Creative submitted for review", communication: "Copy Chief → Marketing Reviewer\nDraft submitted", route: 2 },
+  { label: "Approval", status: "awaiting_approval", agentId: "demo-review", event: "Approval required — route paused", communication: "Marketing Reviewer\nRelease approval required", route: 3 },
+  { label: "Completed", status: "completed", agentId: "demo-review", event: "Demo Campaign completed", communication: "Marketing Reviewer → Mission Control\nCampaign approved", route: 4 },
+  { label: "Output", status: "completed", agentId: "demo-review", event: "Campaign output created", communication: "Mission Control\nCampaign package recorded", route: 4 },
 ] as const;
-const stages = [
-  { id: "queued", label: "Queued", statuses: ["draft", "queued"] },
-  { id: "working", label: "Working", statuses: ["running"] },
-  { id: "review", label: "Review", statuses: [] },
-  { id: "approval", label: "Approval", statuses: ["awaiting_approval"] },
-  { id: "completed", label: "Completed", statuses: ["completed"] },
-  { id: "exception", label: "Blocked / Failed", statuses: ["blocked", "failed", "cancelled"] },
-] as const;
-
+const demoAgents: OperationAgent[] = [
+  { id: "demo-intel", name: "Market Intelligence", status: "active", department: "Research" },
+  { id: "demo-strategy", name: "Content Strategist", status: "active", department: "Strategy" },
+  { id: "demo-copy", name: "Copy Chief", status: "active", department: "Creative" },
+  { id: "demo-review", name: "Marketing Reviewer", status: "active", department: "Governance" },
+];
+const demoTime = "2026-08-30T12:00:00.000Z";
+const activeStatuses = ["draft", "queued", "running", "handoff", "review", "blocked", "awaiting_approval"];
+const pipeline = ["Research", "Strategy", "Creative", "Review", "Approval", "Completed"];
 const words = (value: string) => value.replaceAll("_", " ").replaceAll(".", " ");
 const one = <T,>(value: Relation<T>) => Array.isArray(value) ? value[0] ?? null : value;
 const dateTime = (value: string) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
-const stageFor = (status: string) => status === "handoff" ? "working" : status === "review" ? "review" : stages.find((stage) => stage.statuses.some((item) => item === status))?.id ?? "queued";
-const isIssue = (status: string) => status === "blocked" || status === "failed";
-const eventLanguage: Record<string, string> = { "task.created": "Task entered the queue", "task.started": "Task started", "task.status_changed": "Task moved to a new stage", "task.completed": "Task completed", "task.failed": "Task failed", "approval.requested": "Approval requested", "approval.approved": "Approval approved", "approval.rejected": "Approval rejected", "agent.updated": "Agent updated", "demo.queued": "Demo Campaign entered the queue", "demo.started": "Research Agent started work", "demo.handoff": "Handoff to Content Strategist", "demo.review": "Marketing Reviewer began review", "demo.completed": "Demo Campaign completed" };
-const readableEvent = (event: OperationEvent) => eventLanguage[event.event_type] ?? words(event.event_type);
-function outputText(output: unknown) { if (output == null) return null; if (typeof output === "string") return output; try { return JSON.stringify(output, null, 2); } catch { return "Recorded output could not be displayed."; } }
+const outputText = (output: unknown) => { if (output == null) return null; if (typeof output === "string") return output; try { return JSON.stringify(output, null, 2); } catch { return "Recorded output could not be displayed."; } };
+const eventLabels: Record<string, string> = { "task.created": "Task entered operations", "task.started": "Task started", "task.status_changed": "Task state changed", "task.completed": "Task completed", "task.failed": "Task failed", "approval.requested": "Approval required", "approval.approved": "Approval approved", "approval.rejected": "Approval rejected", "agent.updated": "Agent state changed" };
 
 export function OperationsCanvas({ organizationId, previewMode, tasks, agents, approvals, events, hasDataError }: { organizationId: string; previewMode: boolean; tasks: OperationTask[]; agents: OperationAgent[]; approvals: OperationApproval[]; events: OperationEvent[]; hasDataError: boolean }) {
   const router = useRouter();
   const [selection, setSelection] = useState<Selection>(null);
   const [connection, setConnection] = useState<"connecting" | "live" | "polling">("connecting");
   const [demoStep, setDemoStep] = useState(0);
-  const previousStages = useRef<Record<string, string>>(Object.fromEntries(tasks.map((task) => [task.id, stageFor(task.status)])));
   const closeRef = useRef<HTMLButtonElement>(null);
+  const demoActive = previewMode && tasks.length === 0;
+  const demo = demoSequence[demoStep];
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => router.refresh(), 220); };
     const polling = setInterval(refresh, 30_000);
-    if (previewMode) {
-      setConnection("polling");
-      return () => { clearInterval(polling); clearTimeout(timer); };
-    }
+    if (previewMode) { setConnection("polling"); return () => { clearInterval(polling); clearTimeout(timer); }; }
     try {
       const supabase = createClient();
       const filter = `organization_id=eq.${organizationId}`;
@@ -68,13 +66,12 @@ export function OperationsCanvas({ organizationId, previewMode, tasks, agents, a
     } catch { setConnection("polling"); return () => { clearInterval(polling); clearTimeout(timer); }; }
   }, [organizationId, previewMode, router]);
 
-  useEffect(() => { previousStages.current = Object.fromEntries(tasks.map((task) => [task.id, stageFor(task.status)])); }, [tasks]);
-  const demoActive = previewMode && tasks.length === 0;
   useEffect(() => {
     if (!demoActive || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => setDemoStep((step) => (step + 1) % demoSequence.length), 2500);
+    const timer = window.setInterval(() => setDemoStep((step) => (step + 1) % demoSequence.length), 2200);
     return () => window.clearInterval(timer);
   }, [demoActive]);
+
   useEffect(() => {
     if (!selection) return;
     closeRef.current?.focus();
@@ -83,75 +80,61 @@ export function OperationsCanvas({ organizationId, previewMode, tasks, agents, a
     return () => window.removeEventListener("keydown", escape);
   }, [selection]);
 
-  const demoNow = "2026-08-30T12:00:00.000Z";
-  const demoState = demoSequence[demoStep];
-  const demoAgents: OperationAgent[] = [
-    { id: "demo-research", name: "Research Agent", status: "active", department: "Marketing" },
-    { id: "demo-content", name: "Content Strategist", status: "active", department: "Marketing" },
-    { id: "demo-reviewer", name: "Marketing Reviewer", status: "active", department: "Governance" },
-  ];
-  const demoTask: OperationTask = { id: "demo-campaign", agent_id: demoState.agentId, title: "Demo Campaign", status: demoState.status, created_at: demoNow, started_at: demoStep > 0 ? demoNow : null, finished_at: demoStep === 5 ? demoNow : null, agents: { name: demoAgents.find((agent) => agent.id === demoState.agentId)?.name ?? "Demo Agent" } };
+  const demoTask: OperationTask = { id: "demo-campaign", agent_id: demo.agentId, title: "Demo Campaign", status: demo.status, created_at: demoTime, started_at: demoStep > 0 ? demoTime : null, finished_at: demoStep >= 8 ? demoTime : null, output: demoStep === 9 ? "Campaign package" : null, agents: { name: demoAgents.find((agent) => agent.id === demo.agentId)?.name ?? "Mission Control" } };
   const displayTasks = demoActive ? [demoTask] : tasks;
   const displayAgents = demoActive ? demoAgents : agents;
-  const displayApprovals: OperationApproval[] = demoActive && demoStep === 4 ? [{ id: "demo-approval", task_id: demoTask.id, action_key: "campaign_release", status: "pending", requested_at: demoNow, tasks: { title: demoTask.title, agent_id: demoTask.agent_id, agents: demoTask.agents } }] : approvals;
-  const displayEvents: OperationEvent[] = demoActive ? demoSequence.slice(0, demoStep + 1).reverse().map((step, index) => ({ id: `demo-event-${demoStep}-${index}`, event_type: step.event, entity_type: "demo task", entity_id: demoTask.id, created_at: demoNow })) : events;
+  const displayApprovals: OperationApproval[] = demoActive && demoStep === 7 ? [{ id: "demo-approval", task_id: demoTask.id, action_key: "campaign_release", status: "pending", requested_at: demoTime, tasks: { title: demoTask.title, agent_id: demoTask.agent_id, agents: demoTask.agents } }] : approvals;
+  const feed = demoActive ? demoSequence.slice(0, demoStep + 1).reverse().map((step, index) => ({ id: `demo-${demoStep}-${index}`, label: step.event, detail: step.label, time: "SIM" })) : events.slice(0, 8).map((event) => ({ id: event.id, label: eventLabels[event.event_type] ?? words(event.event_type), detail: words(event.entity_type), time: dateTime(event.created_at) }));
+  const communications = demoActive ? demoSequence.slice(Math.max(0, demoStep - 2), demoStep + 1).reverse().map((step, index) => ({ id: `${demoStep}-${index}`, lines: step.communication.split("\n") })) : events.slice(0, 5).map((event) => ({ id: event.id, lines: [eventLabels[event.event_type] ?? words(event.event_type), words(event.entity_type)] }));
   const pending = displayApprovals.filter((approval) => approval.status === "pending");
   const active = displayTasks.filter((task) => activeStatuses.includes(task.status));
-  const completions = displayTasks.filter((task) => task.status === "completed").slice(0, 5);
-  const exceptions = displayTasks.filter((task) => isIssue(task.status)).slice(0, 5);
-  const activeAgentIds = new Set(active.map((task) => task.agent_id).filter(Boolean));
+  const completed = displayTasks.filter((task) => task.status === "completed").slice(0, 4);
   const selectedTask = selection?.kind === "task" ? displayTasks.find((task) => task.id === selection.id) : null;
   const selectedAgent = selection?.kind === "agent" ? displayAgents.find((agent) => agent.id === selection.id) : null;
   const selectedAgentTask = selectedAgent ? active.find((task) => task.agent_id === selectedAgent.id) : null;
-  const selectedEvents = useMemo(() => selection ? displayEvents.filter((event) => event.entity_id === selection.id).slice(0, 4) : [], [displayEvents, selection]);
-  const systemState = exceptions.length ? "Attention required" : pending.length ? "Approval hold" : active.length ? "Operations active" : "Standing by";
+  const selectedEvents = useMemo(() => selection ? feed.slice(0, 4) : [], [feed, selection]);
+  const agentActive = (agent: OperationAgent) => demoActive ? agent.id === demo.agentId : active.some((task) => task.agent_id === agent.id);
+  const progress = demoActive ? Math.min(100, (demoStep / 8) * 100) : 0;
 
-  const taskCard = (task: OperationTask) => {
-    const current = stageFor(task.status);
-    const previous = demoActive ? stageFor(demoSequence[(demoStep + demoSequence.length - 1) % demoSequence.length].status) : previousStages.current[task.id];
-    const from = stages.findIndex((stage) => stage.id === previous);
-    const to = stages.findIndex((stage) => stage.id === current);
-    const style = { "--task-shift": `${Math.max(-3, Math.min(3, to - from)) * -118}px` } as CSSProperties;
-    const approval = pending.find((item) => item.task_id === task.id);
-    return <article className={`flow-task ${task.status} ${previous && previous !== current ? "task-moved" : ""} ${demoActive ? "demo-task" : ""}`} style={style} key={task.id}>
-      <button className="flow-task-open" type="button" onClick={() => setSelection({ kind: "task", id: task.id })} aria-label={`Open details for ${task.title}`}>
-        <span className="flow-task-top"><span className={`status-chip ${task.status}`}>{words(task.status)}</span><time>{dateTime(task.started_at ?? task.created_at)}</time></span>
-        <strong>{task.title}</strong>
-        <span className="task-route"><span className="route-agent">{one(task.agents)?.name ?? "Unassigned"}</span><span className={`route-trace ${isIssue(task.status) ? "halted" : ""}`} aria-hidden="true"><i /></span><span>{stages.find((stage) => stage.id === current)?.label}</span></span>
-        {isIssue(task.status) && <span className="task-warning">{task.error_message ?? "No exception reason recorded"}</span>}
-      </button>
-      {approval && <Link className="task-approval-interrupt" href="/approvals">Decision required →</Link>}
-    </article>;
-  };
-
-  return <main className={`command-center ${demoActive ? "demo-mode" : ""}`}>
-    <header className="command-header">
-      <div className="command-identity"><span className="command-kicker">FFS / LIVE OPERATIONS</span><h1>Mission Control</h1><div className={`system-state ${exceptions.length ? "alert" : ""}`}><span className="state-pulse" />{systemState}</div></div>
-      <div className="command-metrics" aria-label="Operational summary"><div><strong>{active.length}</strong><span>Active tasks</span></div><div><strong>{activeAgentIds.size}</strong><span>Agents engaged</span></div><div><strong>{pending.length}</strong><span>Approval holds</span></div><div><strong>{exceptions.length}</strong><span>Exceptions</span></div></div>
-      <div className={`live-connection ${connection}`}><span />{connection === "live" ? "Realtime connected" : connection === "polling" ? "30s polling fallback" : "Connecting"}</div>
+  return <main className={`agent-os ${demoActive ? `simulation step-${demoStep}` : ""}`}>
+    <header className="os-header">
+      <div><span className="os-eyebrow">FFS / AGENT OPERATING SYSTEM</span><h1>Mission Control</h1></div>
+      <div className="os-status"><span className={`os-beacon ${pending.length ? "hold" : ""}`} />{pending.length ? "Approval hold" : active.length ? "Operations active" : "Systems ready"}</div>
+      <div className={`os-connection ${connection}`}><i />{connection === "live" ? "Live uplink" : connection === "polling" ? "Preview relay" : "Connecting"}</div>
     </header>
-    {demoActive && <div className="demo-banner"><strong>Preview Animation Demo</strong><span>{demoSequence.map((step, index) => <i className={index === demoStep ? "current" : index < demoStep ? "passed" : ""} key={step.label}>{step.label}</i>)}</span></div>}
-    {hasDataError && <div className="command-error">Live operational data is partially unavailable. Refresh or inspect Activity for details.</div>}
+    {demoActive && <div className="simulation-label"><strong>Preview Operations Simulation</strong><span>Client-only scenario · 22 second cycle</span><em>{demo.label}</em></div>}
+    {hasDataError && <div className="command-error">Operational data is partially unavailable.</div>}
 
-    <div className="operations-layout">
-      <section className="operations-section live-canvas" aria-labelledby="live-operations-title">
-        <div className="command-section-head"><div><span className="section-index">01</span><h2 id="live-operations-title">Live operations canvas</h2></div><Link href="/tasks">Open task queue →</Link></div>
-        <div className="agent-uplink" aria-label="Agent activity">{displayAgents.slice(0, 10).map((agent) => { const task = active.find((item) => item.agent_id === agent.id); const tone = task ? task.status : agent.status === "active" ? "idle" : "offline"; return <button type="button" className={`agent-node ${tone} ${demoActive && agent.id === demoState.agentId ? "demo-active" : ""}`} onClick={() => setSelection({ kind: "agent", id: agent.id })} key={agent.id}><span className="agent-ring"><i /></span><strong>{agent.name}</strong><small>{task ? words(task.status) : agent.status === "active" ? "Idle" : "Offline"}</small></button>; })}{!displayAgents.length && <span className="canvas-empty-note">No agents registered.</span>}</div>
-        <div className="workflow-canvas">{stages.map((stage, index) => { const stageTasks = displayTasks.filter((task) => stageFor(task.status) === stage.id); const live = stageTasks.some((task) => activeStatuses.includes(task.status)); const handoff = demoActive && demoState.status === "handoff" && stage.id === "working"; return <div className={`workflow-stage stage-${stage.id}`} key={stage.id}><header><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage.label}</strong><em>{stageTasks.length}</em></header>{index < stages.length - 1 && <span className={`stage-connector ${live ? "is-live" : ""} ${handoff ? "demo-handoff" : ""}`} aria-hidden="true"><i /></span>}<div className="stage-tasks">{stageTasks.slice(0, 5).map(taskCard)}{!stageTasks.length && <div className="stage-empty">{stage.id === "review" ? "No persistent review state" : "Clear"}</div>}{stageTasks.length > 5 && <Link href="/tasks" className="stage-more">+{stageTasks.length - 5} more</Link>}</div></div>; })}</div>
+    <div className="os-grid">
+      <nav className="os-nav" aria-label="Mission Control systems"><span className="rail-mark">FFS</span>{["Command", "Agents", "Work", "Approvals", "Memory", "Systems"].map((item, index) => <Link className={index === 0 ? "active" : ""} href={index === 0 ? "/" : index === 1 ? "/agents" : index === 2 ? "/tasks" : index === 3 ? "/approvals" : "/activity"} key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></Link>)}</nav>
+
+      <section className="ops-map" aria-labelledby="operations-map-title">
+        <div className="surface-head"><div><span>01 / PRIMARY SURFACE</span><h2 id="operations-map-title">Live Operations Map</h2></div><p>{active.length} active work item{active.length === 1 ? "" : "s"}</p></div>
+        <div className="map-field">
+          <div className="map-grid" aria-hidden="true" />
+          {[0, 1, 2, 3, 4].map((route) => <div className={`route-line route-${route} ${demoActive && demo.route === route ? "live" : ""}`} key={route}><i /></div>)}
+          {displayAgents.slice(0, 4).map((agent, index) => <button className={`map-agent agent-${index} ${agentActive(agent) ? "active" : "idle"} ${demoActive && demo.route === index ? "receiving" : ""}`} type="button" onClick={() => setSelection({ kind: "agent", id: agent.id })} key={agent.id}><span className="node-orbit"><i /></span><small>{agent.department ?? "Operations"}</small><strong>{agent.name}</strong><em>{agentActive(agent) ? words(demoActive ? demo.status : selectedAgentTask?.status ?? "working") : "Ready"}</em></button>)}
+          {displayAgents.length < 4 && !demoActive && <div className="map-empty">Register agents to populate the operations network.</div>}
+          {displayTasks[0] && <button className={`map-task ${displayTasks[0].status}`} style={{ "--task-progress": `${progress}%` } as CSSProperties} type="button" onClick={() => setSelection({ kind: "task", id: displayTasks[0].id })}><span>ACTIVE WORK</span><strong>{displayTasks[0].title}</strong><em>{words(displayTasks[0].status)}</em></button>}
+          {pending.length > 0 && <div className="approval-gate"><span>Decision gate</span><strong>Approval required</strong><i /></div>}
+          {demoActive && demoStep >= 8 && <div className={`output-packet ${demoStep === 9 ? "visible" : ""}`}><span>OUTPUT / CAMPAIGN</span><strong>Campaign package</strong><em>Ready for delivery</em></div>}
+          <div className="map-legend"><span><i className="active" />Active</span><span><i />Ready</span><span><i className="hold" />Approval</span></div>
+        </div>
       </section>
 
-      <aside className="operations-rail">
-        <section className="command-panel approvals-panel" aria-labelledby="approval-watch-title"><div className="panel-heading"><div><span className="section-index">02</span><h2 id="approval-watch-title">Approval interrupts</h2></div><Link href="/approvals">Review all →</Link></div><div className="approval-watch-list">{pending.length ? pending.map((approval) => { const task = one(approval.tasks); return <Link className="approval-watch-item" href="/approvals" key={approval.id}><span>{words(approval.action_key)}</span><strong>{task?.title ?? "Governed action"}</strong><small>{one(task?.agents ?? null)?.name ?? "Unassigned"} · {dateTime(approval.requested_at)}</small><i aria-hidden="true" /></Link>; }) : <div className="panel-empty"><strong>No decisions waiting</strong><span>Approval-gated actions will appear here.</span></div>}</div></section>
-        <section className="command-panel activity-panel" aria-labelledby="activity-title"><div className="panel-heading"><div><span className="section-index">03</span><h2 id="activity-title">Live activity</h2></div><Link href="/activity">Audit trail →</Link></div><div className="activity-feed">{displayEvents.length ? displayEvents.slice(0, 9).map((event, index) => <div className="activity-node event-arrive" style={{ "--event-delay": `${index * 45}ms` } as CSSProperties} key={event.id}><span /><div><strong>{readableEvent(event)}</strong><small>{words(event.entity_type)} · {dateTime(event.created_at)}</small></div></div>) : <div className="panel-empty">No audit events recorded.</div>}</div></section>
+      <aside className="os-right-rail">
+        <section className="os-panel live-activity"><div className="panel-title"><span>02</span><h2>Live Activity</h2><Link href="/activity">View log</Link></div><div className="os-feed" aria-live="polite">{feed.map((item, index) => <div className="os-event" style={{ "--event-order": index } as CSSProperties} key={item.id}><i /><div><strong>{item.label}</strong><span>{item.detail}</span></div><time>{item.time}</time></div>)}</div></section>
+        <section className="os-panel communications"><div className="panel-title"><span>03</span><h2>Agent Communications</h2></div><div className="comms-list">{communications.map((item, index) => <div className="comm-item" key={item.id}><span>{String(communications.length - index).padStart(2, "0")}</span><div><strong>{item.lines[0]}</strong><p>{item.lines[1]}</p></div></div>)}</div></section>
       </aside>
     </div>
 
-    <div className="operations-bottom">
-      <section className="command-panel completions-panel" aria-labelledby="completions-title"><div className="panel-heading"><div><span className="section-index">04</span><h2 id="completions-title">Recent completions</h2></div><Link href="/tasks">Task history →</Link></div><div className="completion-list">{completions.length ? completions.map((task) => <button type="button" className="completion-item result-arrive" onClick={() => setSelection({ kind: "task", id: task.id })} key={task.id}><span className="completion-mark">✓</span><div><strong>{task.title}</strong><span>{one(task.agents)?.name ?? "Unassigned"}{outputText(task.output) ? " · Output recorded" : ""}</span></div><time>{dateTime(task.finished_at ?? task.created_at)}</time></button>) : <div className="panel-empty">No completed tasks recorded.</div>}</div></section>
-      <section className="command-panel exceptions-panel" aria-labelledby="exceptions-title"><div className="panel-heading"><div><span className="section-index">05</span><h2 id="exceptions-title">Blocked / failed</h2></div><Link href="/tasks">Inspect queue →</Link></div><div className="exception-list">{exceptions.length ? exceptions.map((task) => <button type="button" className="exception-item" onClick={() => setSelection({ kind: "task", id: task.id })} key={task.id}><span className="halt-mark" /><div><strong>{task.title}</strong><span>{task.error_message ?? "No exception reason recorded"}</span></div><span>{words(task.status)}</span></button>) : <div className="panel-empty"><strong>No active exceptions</strong><span>Blocked and failed work will remain visible here.</span></div>}</div></section>
-      <section className="command-panel queue-panel" aria-labelledby="queue-title"><div className="panel-heading"><div><span className="section-index">06</span><h2 id="queue-title">Queue summary</h2></div></div><div className="queue-stats"><div><strong>{displayTasks.filter((task) => ["draft", "queued"].includes(task.status)).length}</strong><span>Waiting</span></div><div><strong>{displayTasks.filter((task) => ["running", "handoff", "review"].includes(task.status)).length}</strong><span>Working</span></div><div><strong>{displayAgents.filter((agent) => agent.status === "active" && !activeAgentIds.has(agent.id)).length}</strong><span>Agents idle</span></div></div></section>
+    <section className="workflow-dock" aria-label="Active workflow"><div className="dock-title"><span>04 / ACTIVE WORKFLOW</span><strong>{displayTasks[0]?.title ?? "No work in motion"}</strong></div><div className="pipeline">{pipeline.map((stage, index) => { const current = demoActive ? Math.min(5, demoStep === 0 ? 0 : demoStep <= 2 ? 0 : demoStep <= 4 ? 1 : demoStep === 5 ? 2 : demoStep === 6 ? 3 : demoStep === 7 ? 4 : 5) : -1; return <div className={`${index === current ? "current" : index < current ? "passed" : ""} ${pending.length && index > 4 ? "halted" : ""}`} key={stage}><span>{String(index + 1).padStart(2, "0")}</span><strong>{stage}</strong>{index < pipeline.length - 1 && <i />}</div>; })}</div></section>
+
+    <div className="os-bottom">
+      <section className="os-panel outputs"><div className="panel-title"><span>05</span><h2>Recent Outputs</h2><Link href="/tasks">All outputs</Link></div><div className="output-list">{(demoActive && demoStep === 9 ? [demoTask] : completed).map((task) => <button type="button" onClick={() => setSelection({ kind: "task", id: task.id })} key={task.id}><i>↗</i><span><strong>{task.title}</strong><small>{outputText(task.output) ? "Campaign · Output recorded" : "Completed work item"}</small></span><time>{dateTime(task.finished_at ?? task.created_at)}</time></button>)}{!(demoActive && demoStep === 9) && !completed.length && <p className="panel-empty">Outputs will appear when work completes.</p>}</div></section>
+      <section className="os-panel system-strip"><div className="panel-title"><span>06</span><h2>Memory / Systems</h2></div><div className="system-cells">{[["Knowledge", events.length], ["Skills", displayAgents.reduce((sum, agent) => sum + (agent.agent_skills?.[0]?.count ?? 0), 0)], ["Tools", "Ready"], ["Agents", displayAgents.length], ["System", hasDataError ? "Degraded" : "Nominal"], ["Approvals", pending.length]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><i className={label === "System" && hasDataError ? "warn" : ""} /></div>)}</div></section>
     </div>
 
-    {selection && <div className="detail-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelection(null); }}><aside className="operation-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button ref={closeRef} type="button" className="drawer-close" onClick={() => setSelection(null)} aria-label="Close details">×</button>{selectedTask && <><span className="drawer-kicker">TASK / {words(selectedTask.status)}</span><h2 id="detail-title">{selectedTask.title}</h2><dl><div><dt>Assigned agent</dt><dd>{one(selectedTask.agents)?.name ?? "Unassigned"}</dd></div><div><dt>Created</dt><dd>{dateTime(selectedTask.created_at)}</dd></div><div><dt>Started</dt><dd>{selectedTask.started_at ? dateTime(selectedTask.started_at) : "Not started"}</dd></div><div><dt>Finished</dt><dd>{selectedTask.finished_at ? dateTime(selectedTask.finished_at) : "Not finished"}</dd></div><div><dt>Approval</dt><dd>{pending.some((approval) => approval.task_id === selectedTask.id) ? "Decision pending" : "No pending decision"}</dd></div></dl>{selectedTask.error_message && <div className="drawer-warning"><strong>Exception</strong><span>{selectedTask.error_message}</span></div>}{outputText(selectedTask.output) && <div className="drawer-output"><strong>Recorded output</strong><pre>{outputText(selectedTask.output)}</pre></div>}</>}{selectedAgent && <><span className="drawer-kicker">AGENT / {words(selectedAgent.status)}</span><h2 id="detail-title">{selectedAgent.name}</h2>{selectedAgent.purpose && <p>{selectedAgent.purpose}</p>}<dl><div><dt>Department</dt><dd>{selectedAgent.department ?? "Not assigned"}</dd></div><div><dt>Current task</dt><dd>{selectedAgentTask?.title ?? "No active assignment"}</dd></div>{selectedAgent.agent_skills && <div><dt>Assigned skills</dt><dd>{selectedAgent.agent_skills[0]?.count ?? 0}</dd></div>}{selectedAgent.updated_at && <div><dt>Updated</dt><dd>{dateTime(selectedAgent.updated_at)}</dd></div>}</dl></>}{selectedEvents.length > 0 && <div className="drawer-events"><strong>Recent activity</strong>{selectedEvents.map((event) => <span key={event.id}>{readableEvent(event)} · {dateTime(event.created_at)}</span>)}</div>}</aside></div>}
+    {selection && <div className="detail-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelection(null); }}><aside className="operation-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button ref={closeRef} type="button" className="drawer-close" onClick={() => setSelection(null)} aria-label="Close details">×</button>{selectedTask && <><span className="drawer-kicker">TASK / {words(selectedTask.status)}</span><h2 id="detail-title">{selectedTask.title}</h2><dl><div><dt>Assigned agent</dt><dd>{one(selectedTask.agents)?.name ?? "Unassigned"}</dd></div><div><dt>Current stage</dt><dd>{demoActive ? demo.label : words(selectedTask.status)}</dd></div><div><dt>Approval</dt><dd>{pending.some((approval) => approval.task_id === selectedTask.id) ? "Decision pending" : "No pending decision"}</dd></div></dl>{outputText(selectedTask.output) && <div className="drawer-output"><strong>Recorded output</strong><pre>{outputText(selectedTask.output)}</pre></div>}</>}{selectedAgent && <><span className="drawer-kicker">AGENT / {agentActive(selectedAgent) ? "ACTIVE" : "READY"}</span><h2 id="detail-title">{selectedAgent.name}</h2><dl><div><dt>Department</dt><dd>{selectedAgent.department ?? "Operations"}</dd></div><div><dt>Current state</dt><dd>{agentActive(selectedAgent) ? words(demoActive ? demo.status : "working") : "Ready"}</dd></div><div><dt>Associated task</dt><dd>{selectedAgentTask?.title ?? (demoActive && demo.agentId === selectedAgent.id ? demoTask.title : "No active assignment")}</dd></div></dl></>}{selectedEvents.length > 0 && <div className="drawer-events"><strong>Recent operational events</strong>{selectedEvents.map((event) => <span key={event.id}>{event.label} · {event.time}</span>)}</div>}</aside></div>}
   </main>;
 }
