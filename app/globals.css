@@ -366,3 +366,7 @@ input:focus,textarea:focus,select:focus { outline:2px solid rgba(255,107,26,.35)
   .workflow-canvas::after,.route-trace i,.stage-connector i { display:none!important; }
   .flow-task.task-moved { border-top-color:var(--accent); }
 }
+/* Server-detected, read-only development and deploy-preview mode */
+.preview-indicator { margin:12px 0 0; padding:7px 9px; border:1px solid rgba(241,198,107,.38); color:var(--warning); font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.preview-mode .main form { position:relative; opacity:.52; pointer-events:none; filter:saturate(.45); }
+.preview-mode .main form::after { content:"Preview mode · read only"; position:absolute; z-index:2; top:8px; right:8px; padding:5px 7px; border:1px solid rgba(241,198,107,.4); background:#11161a; color:var(--warning); font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }

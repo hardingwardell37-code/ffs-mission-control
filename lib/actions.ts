@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireContext } from "@/lib/auth";
+import { requireWriteContext as requireContext } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
 import { parseAgent, parseCompany, parseContact, parseCrmActivity, parseLead, parseOpportunity, parseSkill, parseTask } from "@/lib/validation";
 import { assertApprovalResolution } from "@/lib/domain/approval";

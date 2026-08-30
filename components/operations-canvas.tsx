@@ -6,10 +6,10 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/browser";
 
 type Relation<T> = T | T[] | null;
-export type OperationTask = { id: string; agent_id: string | null; title: string; status: string; created_at: string; started_at: string | null; finished_at: string | null; output: unknown; error_message: string | null; agents: Relation<{ name: string }> };
-export type OperationAgent = { id: string; name: string; purpose: string; status: string; updated_at: string; department: string | null; agent_skills: Array<{ count: number }> | null };
-export type OperationApproval = { id: string; task_id: string; action_key: string; reason: string; status: string; requested_at: string; tasks: Relation<{ title: string; agent_id: string | null; agents: Relation<{ name: string }> }> };
-export type OperationEvent = { id: string; event_type: string; entity_type: string; entity_id: string | null; created_at: string; metadata: Record<string, unknown> | null };
+export type OperationTask = { id: string; agent_id: string | null; title: string; status: string; created_at: string; started_at: string | null; finished_at: string | null; output?: unknown; error_message?: string | null; agents: Relation<{ name: string }> };
+export type OperationAgent = { id: string; name: string; purpose?: string | null; status: string; updated_at?: string; department: string | null; agent_skills?: Array<{ count: number }> | null };
+export type OperationApproval = { id: string; task_id: string; action_key: string; reason?: string; status: string; requested_at: string; tasks: Relation<{ title: string; agent_id: string | null; agents: Relation<{ name: string }> }> };
+export type OperationEvent = { id: string; event_type: string; entity_type: string; entity_id?: string | null; created_at: string; metadata?: Record<string, unknown> | null };
 type Selection = { kind: "task" | "agent"; id: string } | null;
 
 const activeStatuses = ["draft", "queued", "running", "blocked", "awaiting_approval"];
@@ -31,7 +31,7 @@ const eventLanguage: Record<string, string> = { "task.created": "Task entered th
 const readableEvent = (event: OperationEvent) => eventLanguage[event.event_type] ?? words(event.event_type);
 function outputText(output: unknown) { if (output == null) return null; if (typeof output === "string") return output; try { return JSON.stringify(output, null, 2); } catch { return "Recorded output could not be displayed."; } }
 
-export function OperationsCanvas({ organizationId, tasks, agents, approvals, events, hasDataError }: { organizationId: string; tasks: OperationTask[]; agents: OperationAgent[]; approvals: OperationApproval[]; events: OperationEvent[]; hasDataError: boolean }) {
+export function OperationsCanvas({ organizationId, previewMode, tasks, agents, approvals, events, hasDataError }: { organizationId: string; previewMode: boolean; tasks: OperationTask[]; agents: OperationAgent[]; approvals: OperationApproval[]; events: OperationEvent[]; hasDataError: boolean }) {
   const router = useRouter();
   const [selection, setSelection] = useState<Selection>(null);
   const [connection, setConnection] = useState<"connecting" | "live" | "polling">("connecting");
@@ -42,6 +42,10 @@ export function OperationsCanvas({ organizationId, tasks, agents, approvals, eve
     let timer: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => router.refresh(), 220); };
     const polling = setInterval(refresh, 30_000);
+    if (previewMode) {
+      setConnection("polling");
+      return () => { clearInterval(polling); clearTimeout(timer); };
+    }
     try {
       const supabase = createClient();
       const filter = `organization_id=eq.${organizationId}`;
@@ -53,7 +57,7 @@ export function OperationsCanvas({ organizationId, tasks, agents, approvals, eve
         .subscribe((status) => setConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "polling" : "connecting"));
       return () => { clearInterval(polling); clearTimeout(timer); void supabase.removeChannel(channel); };
     } catch { setConnection("polling"); return () => { clearInterval(polling); clearTimeout(timer); }; }
-  }, [organizationId, router]);
+  }, [organizationId, previewMode, router]);
 
   useEffect(() => { previousStages.current = Object.fromEntries(tasks.map((task) => [task.id, stageFor(task.status)])); }, [tasks]);
   useEffect(() => {
@@ -120,6 +124,6 @@ export function OperationsCanvas({ organizationId, tasks, agents, approvals, eve
       <section className="command-panel queue-panel" aria-labelledby="queue-title"><div className="panel-heading"><div><span className="section-index">06</span><h2 id="queue-title">Queue summary</h2></div></div><div className="queue-stats"><div><strong>{tasks.filter((task) => ["draft", "queued"].includes(task.status)).length}</strong><span>Waiting</span></div><div><strong>{tasks.filter((task) => task.status === "running").length}</strong><span>Working</span></div><div><strong>{agents.filter((agent) => agent.status === "active" && !activeAgentIds.has(agent.id)).length}</strong><span>Agents idle</span></div></div></section>
     </div>
 
-    {selection && <div className="detail-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelection(null); }}><aside className="operation-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button ref={closeRef} type="button" className="drawer-close" onClick={() => setSelection(null)} aria-label="Close details">×</button>{selectedTask && <><span className="drawer-kicker">TASK / {words(selectedTask.status)}</span><h2 id="detail-title">{selectedTask.title}</h2><dl><div><dt>Assigned agent</dt><dd>{one(selectedTask.agents)?.name ?? "Unassigned"}</dd></div><div><dt>Created</dt><dd>{dateTime(selectedTask.created_at)}</dd></div><div><dt>Started</dt><dd>{selectedTask.started_at ? dateTime(selectedTask.started_at) : "Not started"}</dd></div><div><dt>Finished</dt><dd>{selectedTask.finished_at ? dateTime(selectedTask.finished_at) : "Not finished"}</dd></div><div><dt>Approval</dt><dd>{pending.some((approval) => approval.task_id === selectedTask.id) ? "Decision pending" : "No pending decision"}</dd></div></dl>{selectedTask.error_message && <div className="drawer-warning"><strong>Exception</strong><span>{selectedTask.error_message}</span></div>}{outputText(selectedTask.output) && <div className="drawer-output"><strong>Recorded output</strong><pre>{outputText(selectedTask.output)}</pre></div>}</>}{selectedAgent && <><span className="drawer-kicker">AGENT / {words(selectedAgent.status)}</span><h2 id="detail-title">{selectedAgent.name}</h2><p>{selectedAgent.purpose}</p><dl><div><dt>Department</dt><dd>{selectedAgent.department ?? "Not assigned"}</dd></div><div><dt>Current task</dt><dd>{selectedAgentTask?.title ?? "No active assignment"}</dd></div><div><dt>Assigned skills</dt><dd>{selectedAgent.agent_skills?.[0]?.count ?? 0}</dd></div><div><dt>Updated</dt><dd>{dateTime(selectedAgent.updated_at)}</dd></div></dl></>}{selectedEvents.length > 0 && <div className="drawer-events"><strong>Recent activity</strong>{selectedEvents.map((event) => <span key={event.id}>{readableEvent(event)} · {dateTime(event.created_at)}</span>)}</div>}</aside></div>}
+    {selection && <div className="detail-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelection(null); }}><aside className="operation-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button ref={closeRef} type="button" className="drawer-close" onClick={() => setSelection(null)} aria-label="Close details">×</button>{selectedTask && <><span className="drawer-kicker">TASK / {words(selectedTask.status)}</span><h2 id="detail-title">{selectedTask.title}</h2><dl><div><dt>Assigned agent</dt><dd>{one(selectedTask.agents)?.name ?? "Unassigned"}</dd></div><div><dt>Created</dt><dd>{dateTime(selectedTask.created_at)}</dd></div><div><dt>Started</dt><dd>{selectedTask.started_at ? dateTime(selectedTask.started_at) : "Not started"}</dd></div><div><dt>Finished</dt><dd>{selectedTask.finished_at ? dateTime(selectedTask.finished_at) : "Not finished"}</dd></div><div><dt>Approval</dt><dd>{pending.some((approval) => approval.task_id === selectedTask.id) ? "Decision pending" : "No pending decision"}</dd></div></dl>{selectedTask.error_message && <div className="drawer-warning"><strong>Exception</strong><span>{selectedTask.error_message}</span></div>}{outputText(selectedTask.output) && <div className="drawer-output"><strong>Recorded output</strong><pre>{outputText(selectedTask.output)}</pre></div>}</>}{selectedAgent && <><span className="drawer-kicker">AGENT / {words(selectedAgent.status)}</span><h2 id="detail-title">{selectedAgent.name}</h2>{selectedAgent.purpose && <p>{selectedAgent.purpose}</p>}<dl><div><dt>Department</dt><dd>{selectedAgent.department ?? "Not assigned"}</dd></div><div><dt>Current task</dt><dd>{selectedAgentTask?.title ?? "No active assignment"}</dd></div>{selectedAgent.agent_skills && <div><dt>Assigned skills</dt><dd>{selectedAgent.agent_skills[0]?.count ?? 0}</dd></div>}{selectedAgent.updated_at && <div><dt>Updated</dt><dd>{dateTime(selectedAgent.updated_at)}</dd></div>}</dl></>}{selectedEvents.length > 0 && <div className="drawer-events"><strong>Recent activity</strong>{selectedEvents.map((event) => <span key={event.id}>{readableEvent(event)} · {dateTime(event.created_at)}</span>)}</div>}</aside></div>}
   </main>;
 }
