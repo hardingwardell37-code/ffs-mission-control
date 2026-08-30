@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { LeadAgentPanel } from "@/components/lead-agent-panel";
 import { createClient } from "@/lib/supabase/browser";
 
 type Relation<T> = T | T[] | null;
@@ -104,6 +105,7 @@ export function OperationsCanvas({ organizationId, previewMode, tasks, agents, a
     </header>
     {demoActive && <div className="simulation-label"><strong>Preview Operations Simulation</strong><span>Client-only scenario · 22 second cycle</span><em>{demo.label}</em></div>}
     {hasDataError && <div className="command-error">Operational data is partially unavailable.</div>}
+    <LeadAgentPanel previewMode={previewMode} />
 
     <div className="os-grid">
       <nav className="os-nav" aria-label="Mission Control systems"><span className="rail-mark">FFS</span>{["Command", "Agents", "Work", "Approvals", "Memory", "Systems"].map((item, index) => <Link className={index === 0 ? "active" : ""} href={index === 0 ? "/" : index === 1 ? "/agents" : index === 2 ? "/tasks" : index === 3 ? "/approvals" : "/activity"} key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></Link>)}</nav>
