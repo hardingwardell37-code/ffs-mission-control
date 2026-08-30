@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { canTransitionTask, assertTaskTransition } from "../lib/domain/task-state";
+import { canTransitionTask, assertTaskCompletionAllowed, assertTaskTransition } from "../lib/domain/task-state";
 import { assertApprovalResolution } from "../lib/domain/approval";
 import { evaluateToolPermission } from "../lib/domain/permissions";
 import { parseAgent, parseTask } from "../lib/validation";
@@ -11,7 +11,16 @@ describe("deny-by-default permissions", () => {
 });
 describe("task lifecycle", () => {
   it("allows the queued execution contract", () => expect(canTransitionTask("queued", "running")).toBe(true));
+  it("supports the governed runtime path", () => {
+    expect(canTransitionTask("draft", "queued")).toBe(true);
+    expect(canTransitionTask("running", "awaiting_approval")).toBe(true);
+    expect(canTransitionTask("awaiting_approval", "completed")).toBe(true);
+  });
   it("rejects terminal state mutation", () => expect(() => assertTaskTransition("completed", "running")).toThrow("Invalid task transition"));
+  it("rejects an invalid shortcut", () => expect(() => assertTaskTransition("queued", "completed")).toThrow("Invalid task transition"));
+  it("prevents completion while approval is pending", () => expect(() => assertTaskCompletionAllowed("awaiting_approval", ["pending"])).toThrow("unresolved"));
+  it("prevents completion after a rejected approval", () => expect(() => assertTaskCompletionAllowed("running", ["rejected"])).toThrow("unresolved"));
+  it("allows completion after approval", () => expect(() => assertTaskCompletionAllowed("awaiting_approval", ["approved"])).not.toThrow());
 });
 describe("approval invariants", () => {
   it("allows a pending decision", () => expect(() => assertApprovalResolution("pending", "approved")).not.toThrow());
