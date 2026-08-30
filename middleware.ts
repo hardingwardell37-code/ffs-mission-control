@@ -5,7 +5,8 @@ import { isAuthRoute, isPreviewMode } from "@/lib/preview-mode";
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 export async function middleware(request: NextRequest) {
-  if (isPreviewMode()) {
+  const previewHost = request.nextUrl.hostname.startsWith("deploy-preview-") && request.nextUrl.hostname.endsWith("--ffs-mission-control.netlify.app");
+  if (isPreviewMode() || previewHost) {
     return request.nextUrl.pathname === "/" ? NextResponse.next({ request }) : NextResponse.redirect(new URL("/", request.url));
   }
   if (isAuthRoute(request.nextUrl.pathname)) return NextResponse.next({ request });

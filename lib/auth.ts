@@ -1,10 +1,16 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { createPreviewClient } from "@/lib/supabase/preview";
 import { createClient } from "@/lib/supabase/server";
 
+async function isPreviewRequest() {
+  const host = (await headers()).get("host")?.toLowerCase();
+  return isPreviewMode() || Boolean(host?.startsWith("deploy-preview-") && host.endsWith("--ffs-mission-control.netlify.app"));
+}
+
 export async function requireContext() {
-  if (isPreviewMode()) {
+  if (await isPreviewRequest()) {
     const supabase = createPreviewClient();
     const { data: organization, error } = await supabase.from("organizations").select("id").eq("name", "Forged Field Systems").limit(1).maybeSingle();
     if (error || !organization) throw new Error("Forged Field Systems preview organization is unavailable");
@@ -20,6 +26,6 @@ export async function requireContext() {
 }
 
 export async function requireWriteContext() {
-  if (isPreviewMode()) throw new Error("Mission Control preview mode is read-only");
+  if (await isPreviewRequest()) throw new Error("Mission Control preview mode is read-only");
   return requireContext();
 }
