@@ -10,6 +10,7 @@ import { createLeadModelProvider } from "@/lib/lead-agent-provider";
 import { executeSpecialistStep } from "@/lib/specialist-execution";
 import { handoffTask } from "@/lib/task-runtime";
 import { parseTask } from "@/lib/validation";
+import { advanceTaskWorkflow } from "@/lib/workflow-orchestrator";
 
 export type LeadAgentState = { mode: LeadMode | null; response: string; action: string; approval: string };
 export const initialLeadAgentState: LeadAgentState = { mode: null, response: "Awaiting a bounded operational command.", action: "No action taken", approval: "Not required" };
@@ -38,8 +39,10 @@ function staticResponse(intent: LeadIntent): LeadAgentState | null {
 }
 
 async function resolveCommand(ctx: CommandContext, command: string): Promise<{ intent: LeadIntent; model: ModelMeta }> {
+  const deterministic = parseLeadCommand(command);
+  if (deterministic.kind === "advance_workflow") return { intent: deterministic, model: null };
   const provider = createLeadModelProvider();
-  if (!provider) return { intent: parseLeadCommand(command), model: null };
+  if (!provider) return { intent: deterministic, model: null };
   const [agentResult, taskResult, approvalResult, eventResult] = await Promise.all([
     ctx.supabase.from("agents").select("id, name, status, department, purpose, agent_skills(skills(id, name))").eq("organization_id", ctx.organizationId).is("archived_at", null).limit(30),
     ctx.supabase.from("tasks").select("title, status, agents(name)").eq("organization_id", ctx.organizationId).order("created_at", { ascending: false }).limit(30),
@@ -107,6 +110,15 @@ export async function runLeadAgentCommand(_previous: LeadAgentState, formData: F
       if (error) throw error;
       await auditModelResult(ctx, intent, resolved.model, "read_agent_work");
       return { mode: "RECOMMEND", response: data?.length ? data.map((task) => `${task.title} · ${task.status}`).join("\n") : `${agent.name} has no active work.`, action: `Read ${agent.name} work`, approval: "Not required" };
+    }
+
+    if (intent.kind === "advance_workflow") {
+      const { data: tasks, error } = await ctx.supabase.from("tasks").select("id, title, status").eq("organization_id", ctx.organizationId).in("status", ["queued", "running", "awaiting_approval"]).order("created_at", { ascending: false }).limit(30);
+      if (error) throw error;
+      const task = uniqueMatch((tasks ?? []) as NamedRecord[], intent.taskQuery, "title");
+      if (!task) return { mode: "CLARIFY", response: `Identify one active task matching “${intent.taskQuery}”.`, action: "No action taken", approval: "Not required" };
+      const result = await advanceTaskWorkflow(task.id);
+      return { mode: (result.responseMode as LeadMode | null) ?? "RECOMMEND", response: result.reason ?? `${result.workflow} advanced through ${result.stage ?? "completion"}.`, action: result.completed ? "Workflow completed" : `Workflow ${result.status}`, approval: result.status === "paused" ? "Required" : "Not required" };
     }
 
     if (intent.kind !== "create_task" && intent.kind !== "handoff") return initialLeadAgentState;

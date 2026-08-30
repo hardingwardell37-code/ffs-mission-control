@@ -7,6 +7,7 @@ export type LeadIntent =
   | { kind: "read_failed" }
   | { kind: "create_task"; agentQuery: string; title: string; prompt: string }
   | { kind: "handoff"; taskQuery: string; agentQuery: string }
+  | { kind: "advance_workflow"; taskQuery: string }
   | { kind: "challenge"; reason: string }
   | { kind: "clarify"; question: string }
   | { kind: "approval_required"; action: string }
@@ -44,6 +45,8 @@ export function parseLeadCommand(raw: string): LeadIntent {
 
   const handoff = command.match(/^(?:hand\s*off|delegate)\s+(.+?)\s+to\s+(.+)$/i);
   if (handoff) return { kind: "handoff", taskQuery: clean(handoff[1]), agentQuery: clean(handoff[2]) };
+  const workflow = command.match(/^(?:advance|run|continue)\s+(?:the\s+)?workflow\s+for\s+(.+)$/i);
+  if (workflow) return { kind: "advance_workflow", taskQuery: clean(workflow[1]) };
 
   return { kind: "clarify", question: "I can inspect operations, create a bounded internal task, or hand off a running task. Specify one of those outcomes." };
 }
@@ -52,6 +55,7 @@ export function modeForIntent(intent: LeadIntent): LeadMode {
   if (intent.kind.startsWith("read_")) return "RECOMMEND";
   if (intent.kind === "create_task") return "EXECUTE";
   if (intent.kind === "handoff") return "DELEGATE";
+  if (intent.kind === "advance_workflow") return "EXECUTE";
   if (intent.kind === "challenge") return "CHALLENGE";
   if (intent.kind === "approval_required") return "REQUIRE_APPROVAL";
   if (intent.kind === "refuse") return "REFUSE";
