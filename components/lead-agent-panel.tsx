@@ -61,8 +61,8 @@ export function LeadAgentPanel({ previewMode }: { previewMode: boolean }) {
       for (let index = event.resultIndex; index < event.results.length; index += 1) transcript += event.results[index][0].transcript;
       setCommand(transcript.trimStart().slice(0, 500));
     };
-    recognition.onerror = (event) => { setSpeechError(event.error === "not-allowed" ? "Microphone permission was denied. Text commands still work." : `Voice input stopped: ${event.error}.`); setListening(false); };
-    recognition.onend = () => setListening(false);
+    recognition.onerror = (event) => { setSpeechError(event.error === "not-allowed" ? "Microphone permission was denied. Text commands still work." : event.error === "audio-capture" ? "No usable microphone was found. Text commands still work." : `Voice input stopped: ${event.error}.`); setListening(false); recognitionRef.current = null; };
+    recognition.onend = () => { setListening(false); recognitionRef.current = null; };
     recognitionRef.current = recognition;
     try { recognition.start(); setListening(true); } catch { setSpeechError("Voice input could not start. Text commands still work."); }
   };

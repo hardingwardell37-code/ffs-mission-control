@@ -40,6 +40,7 @@ function staticResponse(intent: LeadIntent): LeadAgentState | null {
 
 async function resolveCommand(ctx: CommandContext, command: string): Promise<{ intent: LeadIntent; model: ModelMeta }> {
   const deterministic = parseLeadCommand(command);
+  if (ctx.previewMode) return { intent: deterministic, model: null };
   if (deterministic.kind === "advance_workflow") return { intent: deterministic, model: null };
   const provider = createLeadModelProvider();
   if (!provider) return { intent: deterministic, model: null };
@@ -76,9 +77,8 @@ async function auditModelResult(ctx: CommandContext, intent: LeadIntent, model: 
 }
 
 export async function runLeadAgentCommand(_previous: LeadAgentState, formData: FormData): Promise<LeadAgentState> {
-  const command = String(formData.get("command") ?? "").trim().slice(0, 500);
-
   try {
+    const command = String(formData.get("command") ?? "").trim().slice(0, 500);
     const ctx = await requireContext();
     const resolved = await resolveCommand(ctx, command);
     const intent = resolved.intent;
