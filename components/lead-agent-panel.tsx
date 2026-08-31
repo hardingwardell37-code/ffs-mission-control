@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { initialLeadAgentState, runLeadAgentCommand } from "@/lib/lead-agent";
+import { runLeadAgentCommand, type LeadAgentState } from "@/lib/lead-agent";
+
+const initialLeadAgentState: LeadAgentState = { mode: null, response: "Awaiting a bounded operational command.", action: "No action taken", approval: "Not required" };
 
 type SpeechResult = { isFinal: boolean; 0: { transcript: string } };
 type SpeechResultEvent = { resultIndex: number; results: ArrayLike<SpeechResult> };

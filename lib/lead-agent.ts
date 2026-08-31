@@ -13,7 +13,7 @@ import { parseTask } from "@/lib/validation";
 import { advanceTaskWorkflow } from "@/lib/workflow-orchestrator";
 
 export type LeadAgentState = { mode: LeadMode | null; response: string; action: string; approval: string };
-export const initialLeadAgentState: LeadAgentState = { mode: null, response: "Awaiting a bounded operational command.", action: "No action taken", approval: "Not required" };
+const initialLeadAgentState: LeadAgentState = { mode: null, response: "Awaiting a bounded operational command.", action: "No action taken", approval: "Not required" };
 
 type NamedRecord = { id: string; name?: string; title?: string; status?: string; agent_id?: string | null };
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
