@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { LeadAgentPanel } from "@/components/lead-agent-panel";
+import type { AgentCommunication } from "@/lib/domain/agent-communications";
 import { createClient } from "@/lib/supabase/browser";
 
 type Relation<T> = T | T[] | null;
@@ -40,7 +41,7 @@ const dateTime = (value: string) => new Intl.DateTimeFormat("en", { month: "shor
 const outputText = (output: unknown) => { if (output == null) return null; if (typeof output === "string") return output; try { return JSON.stringify(output, null, 2); } catch { return "Recorded output could not be displayed."; } };
 const eventLabels: Record<string, string> = { "task.created": "Task entered operations", "task.queued": "Task queued", "task.started": "Task started", "task.status_changed": "Task state changed", "task.blocked": "Task blocked", "task.handoff": "Agent handoff", "task.completed": "Task completed", "task.failed": "Task failed", "task.cancelled": "Task cancelled", "approval.requested": "Approval required", "approval.approved": "Approval approved", "approval.rejected": "Approval rejected", "agent.updated": "Agent state changed" };
 
-export function OperationsCanvas({ organizationId, previewMode, tasks, agents, approvals, events, hasDataError }: { organizationId: string; previewMode: boolean; tasks: OperationTask[]; agents: OperationAgent[]; approvals: OperationApproval[]; events: OperationEvent[]; hasDataError: boolean }) {
+export function OperationsCanvas({ organizationId, previewMode, tasks, agents, approvals, events, communications, hasDataError }: { organizationId: string; previewMode: boolean; tasks: OperationTask[]; agents: OperationAgent[]; approvals: OperationApproval[]; events: OperationEvent[]; communications: AgentCommunication[]; hasDataError: boolean }) {
   const router = useRouter();
   const [selection, setSelection] = useState<Selection>(null);
   const [connection, setConnection] = useState<"connecting" | "live" | "polling">("connecting");
@@ -86,7 +87,7 @@ export function OperationsCanvas({ organizationId, previewMode, tasks, agents, a
   const displayAgents = demoActive ? demoAgents : agents;
   const displayApprovals: OperationApproval[] = demoActive && demoStep === 7 ? [{ id: "demo-approval", task_id: demoTask.id, action_key: "campaign_release", status: "pending", requested_at: demoTime, tasks: { title: demoTask.title, agent_id: demoTask.agent_id, agents: demoTask.agents } }] : approvals;
   const feed = demoActive ? demoSequence.slice(0, demoStep + 1).reverse().map((step, index) => ({ id: `demo-${demoStep}-${index}`, label: step.event, detail: step.label, time: "SIM" })) : events.slice(0, 8).map((event) => ({ id: event.id, label: eventLabels[event.event_type] ?? words(event.event_type), detail: words(event.entity_type), time: dateTime(event.created_at) }));
-  const communications = demoActive ? demoSequence.slice(Math.max(0, demoStep - 2), demoStep + 1).reverse().map((step, index) => ({ id: `${demoStep}-${index}`, lines: step.communication.split("\n") })) : events.slice(0, 5).map((event) => ({ id: event.id, lines: [eventLabels[event.event_type] ?? words(event.event_type), words(event.entity_type)] }));
+  const displayCommunications = demoActive ? demoSequence.slice(Math.max(0, demoStep - 2), demoStep + 1).reverse().map((step, index) => { const lines = step.communication.split("\n"); return { id: `${demoStep}-${index}`, source: lines[0], summary: lines[1], task: "Demo Campaign", timestamp: "SIM", severity: "info" }; }) : communications.slice(0, 6).map((item) => ({ ...item, source: item.destination ? `${item.source} → ${item.destination}` : item.source, timestamp: dateTime(item.timestamp) }));
   const pending = displayApprovals.filter((approval) => approval.status === "pending");
   const active = displayTasks.filter((task) => activeStatuses.includes(task.status));
   const completed = displayTasks.filter((task) => task.status === "completed").slice(0, 4);
@@ -126,7 +127,7 @@ export function OperationsCanvas({ organizationId, previewMode, tasks, agents, a
 
       <aside className="os-right-rail">
         <section className="os-panel live-activity"><div className="panel-title"><span>02</span><h2>Live Activity</h2><Link href="/activity">View log</Link></div><div className="os-feed" aria-live="polite">{feed.map((item, index) => <div className="os-event" style={{ "--event-order": index } as CSSProperties} key={item.id}><i /><div><strong>{item.label}</strong><span>{item.detail}</span></div><time>{item.time}</time></div>)}</div></section>
-        <section className="os-panel communications"><div className="panel-title"><span>03</span><h2>Agent Communications</h2></div><div className="comms-list">{communications.map((item, index) => <div className="comm-item" key={item.id}><span>{String(communications.length - index).padStart(2, "0")}</span><div><strong>{item.lines[0]}</strong><p>{item.lines[1]}</p></div></div>)}</div></section>
+        <section className="os-panel communications"><div className="panel-title"><span>03</span><h2>Agent Communications</h2></div><div className="comms-list" aria-live="polite">{displayCommunications.map((item, index) => <div className={`comm-item ${item.severity}`} key={item.id}><span>{String(displayCommunications.length - index).padStart(2, "0")}</span><div><strong>{item.source}</strong><p>{item.summary}</p><small>{item.task ? `${item.task} · ` : ""}{item.timestamp}</small></div></div>)}{!displayCommunications.length && <p className="panel-empty">No operational communications recorded.</p>}</div></section>
       </aside>
     </div>
 
