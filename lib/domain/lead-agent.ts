@@ -23,6 +23,8 @@ export function parseLeadCommand(raw: string): LeadIntent {
   if (/\b(delete|purge|wipe|erase)\b.*\b(crm|lead|contact|customer|database|record)/i.test(command)) {
     return { kind: "refuse", reason: "Destructive CRM or database commands are outside this command layer." };
   }
+  const createFor = command.match(/^(?:create|queue)\s+(?:a\s+)?(.+?)\s+task\s+for\s+([^,]+)(?:,\s*.+)?$/i);
+  if (createFor) return { kind: "create_task", title: clean(createFor[1]), agentQuery: clean(createFor[2]), prompt: command };
   if (/\b(launch|send|publish|post|deploy)\b.*\b(now|immediately|live|production)?\b/i.test(command)) {
     return lower.includes("approved")
       ? { kind: "approval_required", action: command }
@@ -38,8 +40,6 @@ export function parseLeadCommand(raw: string): LeadIntent {
   const agentWork = command.match(/(?:what is|show)\s+(.+?)\s+(?:working on|doing)/i);
   if (agentWork) return { kind: "read_agent_work", agentQuery: clean(agentWork[1]) };
 
-  const createFor = command.match(/^(?:create|queue)\s+(?:a\s+)?(.+?)\s+task\s+for\s+(.+)$/i);
-  if (createFor) return { kind: "create_task", title: clean(createFor[1]), agentQuery: clean(createFor[2]), prompt: clean(createFor[1]) };
   const havePrepare = command.match(/^have\s+(.+?)\s+(?:prepare|create|draft|research)\s+(.+)$/i);
   if (havePrepare) return { kind: "create_task", agentQuery: clean(havePrepare[1]), title: clean(havePrepare[2]), prompt: `${clean(havePrepare[2])}.` };
 
