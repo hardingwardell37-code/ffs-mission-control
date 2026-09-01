@@ -1,0 +1,2 @@
+import {LeadForm} from "@/components/crm-forms";import {createLead} from "@/lib/actions";import {getCrmOptions} from "@/lib/crm";import {requireContext} from "@/lib/auth";
+export default async function NewLead(){const {supabase,organizationId}=await requireContext();const options=await getCrmOptions(supabase,organizationId);return <><div className="eyebrow">CRM / Leads</div><h1>Add lead</h1><LeadForm action={createLead} {...options}/></>}

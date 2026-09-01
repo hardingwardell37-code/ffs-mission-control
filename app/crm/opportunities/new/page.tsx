@@ -1,0 +1,2 @@
+import {OpportunityForm} from "@/components/crm-forms";import {createOpportunity} from "@/lib/actions";import {getCrmOptions} from "@/lib/crm";import {requireContext} from "@/lib/auth";
+export default async function NewOpportunity(){const {supabase,organizationId}=await requireContext();const options=await getCrmOptions(supabase,organizationId);return <><div className="eyebrow">CRM / Opportunities</div><h1>Add opportunity</h1><OpportunityForm action={createOpportunity} {...options}/></>}
