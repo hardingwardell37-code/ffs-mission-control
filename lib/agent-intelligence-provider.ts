@@ -19,9 +19,21 @@ const proposalSchema = { type: "object", additionalProperties: false, properties
 }, required: ["interpretedIntent", "responseMode", "proposedAction", "actionKey", "targetTask", "targetAgent", "result", "confidence", "blocker", "clarificationRequest", "approvalRequired", "explanation"] };
 
 function configuration() {
-  const baseUrl = (process.env.AGENT_MODEL_BASE_URL ?? process.env.LEAD_AGENT_MODEL_BASE_URL)?.trim(); const apiKey = (process.env.AGENT_MODEL_API_KEY ?? process.env.LEAD_AGENT_MODEL_API_KEY)?.trim(); const model = (process.env.AGENT_MODEL ?? process.env.LEAD_AGENT_MODEL)?.trim();
-  if (!baseUrl || !apiKey || !model) return null;
-  return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey, model, identifier: (process.env.AGENT_MODEL_PROVIDER ?? process.env.LEAD_AGENT_MODEL_PROVIDER)?.trim() || "openai-compatible" };
+  const baseUrl = (process.env.AGENT_MODEL_BASE_URL ?? process.env.LEAD_AGENT_MODEL_BASE_URL)?.trim();
+  const apiKey = (process.env.AGENT_MODEL_API_KEY ?? process.env.LEAD_AGENT_MODEL_API_KEY)?.trim();
+  const model = (process.env.AGENT_MODEL ?? process.env.LEAD_AGENT_MODEL)?.trim();
+  const identifier = (process.env.AGENT_MODEL_PROVIDER ?? process.env.LEAD_AGENT_MODEL_PROVIDER)?.trim();
+  if (!baseUrl || !apiKey || !model || !identifier) return null;
+  return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey, model, identifier };
+}
+
+export function agentModelConfigurationStatus() {
+  return {
+    baseUrl: Boolean((process.env.AGENT_MODEL_BASE_URL ?? process.env.LEAD_AGENT_MODEL_BASE_URL)?.trim()),
+    apiKey: Boolean((process.env.AGENT_MODEL_API_KEY ?? process.env.LEAD_AGENT_MODEL_API_KEY)?.trim()),
+    model: Boolean((process.env.AGENT_MODEL ?? process.env.LEAD_AGENT_MODEL)?.trim()),
+    provider: Boolean((process.env.AGENT_MODEL_PROVIDER ?? process.env.LEAD_AGENT_MODEL_PROVIDER)?.trim()),
+  };
 }
 export function createAgentIntelligenceProvider(): AgentIntelligenceProvider | null {
   const config = configuration(); if (!config) return null;
