@@ -4,7 +4,7 @@ export async function GET(){
     ok: true,
     service: "ffs-mission-control",
     product: "F&P Studio",
-    phase: "phase-1-campaign-core",
+    phase: "phase-2-generation",
     autonomousExecution: false
   });
 }

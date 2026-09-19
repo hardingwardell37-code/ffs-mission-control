@@ -13,6 +13,10 @@ const sql0004 = readFileSync(
   new URL("../supabase/migrations/0004_studio_bootstrap.sql", import.meta.url),
   "utf8",
 );
+const sql0005 = readFileSync(
+  new URL("../supabase/migrations/0005_generation_jobs.sql", import.meta.url),
+  "utf8",
+);
 
 describe("organization isolation migration", () => {
   it("removes broad foundation policies", () =>
@@ -61,5 +65,37 @@ describe("studio bootstrap migration", () => {
   it("bootstraps F&P Studio org slug prefix", () => {
     expect(sql0004).toContain("F&P Studio");
     expect(sql0004).toContain("fp-studio-");
+  });
+});
+
+describe("generation jobs migration", () => {
+  it("creates generation job tables", () => {
+    expect(sql0005).toContain("create table public.generation_jobs");
+    expect(sql0005).toContain("create table public.generation_job_events");
+  });
+  it("defines provider and status enums", () => {
+    expect(sql0005).toContain("generation_provider");
+    expect(sql0005).toContain("openai_image");
+    expect(sql0005).toContain("google_omni");
+    expect(sql0005).toContain("fal_minimax_h3");
+    expect(sql0005).toContain("fal_minimax_h3_max");
+    expect(sql0005).toContain("grok_imagine");
+    expect(sql0005).toContain("'auto'");
+    expect(sql0005).toContain("generation_job_status");
+    expect(sql0005).toContain("'queued'");
+    expect(sql0005).toContain("'succeeded'");
+  });
+  it("reuses org membership helpers for RLS", () => {
+    expect(sql0005).toContain("is_org_member");
+    expect(sql0005).toContain("can_manage_org");
+  });
+  it("indexes campaign_id and status", () => {
+    expect(sql0005).toContain("generation_jobs_campaign_status_idx");
+    expect(sql0005).toContain("campaign_id, status");
+  });
+  it("enforces same-campaign reference and locked assets", () => {
+    expect(sql0005).toContain("validate_generation_job_campaign_org");
+    expect(sql0005).toContain("reference assets must belong to the same campaign");
+    expect(sql0005).toContain("locked assets must belong to the same campaign");
   });
 });

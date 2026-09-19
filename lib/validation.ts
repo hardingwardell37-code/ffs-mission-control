@@ -1,4 +1,4 @@
-import { ASSET_OWNERSHIP, ASSET_ROLES, CAMPAIGN_ENTRY_MODES, slugifyCampaignName } from "./domain/campaign";
+import { ASSET_OWNERSHIP, ASSET_ROLES, CAMPAIGN_ENTRY_MODES, GENERATION_MODALITIES, GENERATION_PROVIDERS, slugifyCampaignName } from "./domain/campaign";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -120,5 +120,46 @@ export function parseAsset(form: FormData) {
     model_provider: optional(form.get("modelProvider"), 80) || null,
     model_name: optional(form.get("modelName"), 120) || null,
     prompt: optional(form.get("prompt"), 12000) || null,
+  };
+}
+
+function parseUuidList(form: FormData, key: string): string[] {
+  const values = form.getAll(key).flatMap((v) => {
+    if (typeof v !== "string") return [];
+    return v.split(",").map((s) => s.trim()).filter(Boolean);
+  });
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const unique = [...new Set(values)];
+  for (const id of unique) {
+    if (!uuid.test(id)) throw new Error(`Invalid asset id in ${key}`);
+  }
+  return unique;
+}
+
+export function parseGenerationJob(form: FormData) {
+  const modality = required(form.get("modality"), "Modality", 16);
+  if (!(GENERATION_MODALITIES as string[]).includes(modality)) throw new Error("Invalid modality");
+  const provider = required(form.get("provider"), "Provider", 32);
+  if (!(GENERATION_PROVIDERS as string[]).includes(provider)) throw new Error("Invalid provider");
+  const prompt = required(form.get("prompt"), "Prompt", 12000);
+  const lower = prompt.toLowerCase();
+  if (
+    lower.includes("exact copy of this ad") ||
+    lower.includes("recreate this commercial pixel") ||
+    lower.includes("copy this exact")
+  ) {
+    throw new Error(
+      "Prompt looks like a request to copy an existing ad. Describe an original direction instead — do not paste copyrighted source creatives as the generation brief.",
+    );
+  }
+  return {
+    modality,
+    provider,
+    prompt,
+    negative_prompt: optional(form.get("negativePrompt"), 4000),
+    model_name: optional(form.get("modelName"), 200) || null,
+    reference_asset_ids: parseUuidList(form, "referenceAssetIds"),
+    locked_asset_ids: parseUuidList(form, "lockedAssetIds"),
+    settings: {} as Record<string, unknown>,
   };
 }

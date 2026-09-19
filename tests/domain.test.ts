@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { canTransitionTask, assertTaskTransition } from "../lib/domain/task-state";
 import { assertApprovalResolution } from "../lib/domain/approval";
 import { evaluateToolPermission } from "../lib/domain/permissions";
-import { parseAgent, parseAsset, parseCampaign, parseCampaignDna, parseResearchSource, parseTask } from "../lib/validation";
+import { parseAgent, parseAsset, parseCampaign, parseCampaignDna, parseGenerationJob, parseResearchSource, parseTask } from "../lib/validation";
 import { writeAudit } from "../lib/audit";
-import { CAMPAIGN_APPROVAL_KEYS, isCampaignApprovalKey, slugifyCampaignName } from "../lib/domain/campaign";
+import { CAMPAIGN_APPROVAL_KEYS, GENERATION_PROVIDERS, isCampaignApprovalKey, slugifyCampaignName } from "../lib/domain/campaign";
 
 describe("deny-by-default permissions", () => {
   it("rejects unregistered tools", () => expect(evaluateToolPermission(undefined, "write").allowed).toBe(false));
@@ -65,4 +65,31 @@ describe("campaign validation", () => {
 });
 describe("audit writes", () => {
   it("inserts actor identity and organization context", async () => { const insert=vi.fn().mockReturnValue({error:null}); const client={from:vi.fn().mockReturnValue({insert})}; await writeAudit(client as never,{organizationId:"org",actorId:"user",eventType:"agent.created",entityType:"agent",entityId:"a"}); expect(insert).toHaveBeenCalledWith(expect.objectContaining({organization_id:"org",actor_id:"user",event_type:"agent.created"})); });
+});
+
+describe("generation validation", () => {
+  it("parses generation job forms", () => {
+    const f = new FormData();
+    f.set("modality", "image");
+    f.set("provider", "auto");
+    f.set("prompt", "Original directional light on a brushed steel bottle");
+    f.set("negativePrompt", "watermark");
+    expect(parseGenerationJob(f)).toMatchObject({
+      modality: "image",
+      provider: "auto",
+      negative_prompt: "watermark",
+    });
+  });
+  it("rejects copycat exact-ad prompts", () => {
+    const f = new FormData();
+    f.set("modality", "image");
+    f.set("provider", "openai_image");
+    f.set("prompt", "Please copy this exact Nike ad layout");
+    expect(() => parseGenerationJob(f)).toThrow(/original direction/i);
+  });
+  it("exposes generation provider ids", () => {
+    expect(GENERATION_PROVIDERS).toContain("auto");
+    expect(GENERATION_PROVIDERS).toContain("grok_imagine");
+    expect(GENERATION_PROVIDERS).toContain("fal_minimax_h3");
+  });
 });

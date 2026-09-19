@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { requireContext } from "@/lib/auth";
 import { addResearchSource, updateCampaignBrief, updateCampaignDna } from "@/lib/actions";
 import { AssetUploadForm } from "@/components/asset-upload";
+import { GenerationPanel } from "@/components/generation-form";
 
 const TABS = [
   ["overview", "Overview"],
   ["dna", "DNA"],
   ["research", "Research"],
   ["assets", "Assets"],
+  ["generate", "Generate"],
 ] as const;
 
 type Tab = (typeof TABS)[number][0];
@@ -25,12 +27,13 @@ export default async function CampaignDetailPage({
   const tab = (TABS.some(([k]) => k === sp.tab) ? sp.tab : "overview") as Tab;
   const { supabase, organizationId } = await requireContext();
 
-  const [{ data: campaign }, { data: dna }, { data: sources }, { data: assets }, { data: sections }] = await Promise.all([
+  const [{ data: campaign }, { data: dna }, { data: sources }, { data: assets }, { data: sections }, { data: jobs }] = await Promise.all([
     supabase.from("campaigns").select("*").eq("id", id).eq("organization_id", organizationId).maybeSingle(),
     supabase.from("campaign_dna").select("*").eq("campaign_id", id).eq("organization_id", organizationId).maybeSingle(),
     supabase.from("research_sources").select("*").eq("campaign_id", id).eq("organization_id", organizationId).order("created_at", { ascending: false }),
     supabase.from("assets").select("*").eq("campaign_id", id).eq("organization_id", organizationId).order("created_at", { ascending: false }),
     supabase.from("campaign_sections").select("section_key,label,sort_order").eq("campaign_id", id).order("sort_order"),
+    supabase.from("generation_jobs").select("id,modality,provider,model_name,status,prompt,error_message,result_asset_id,created_at,completed_at").eq("campaign_id", id).eq("organization_id", organizationId).order("created_at", { ascending: false }).limit(50),
   ]);
 
   if (!campaign) notFound();
@@ -154,12 +157,37 @@ export default async function CampaignDetailPage({
                   {a.storage_path ? <div className="muted">path: {a.storage_path}</div> : null}
                   {a.source_url ? <div className="muted"><a href={a.source_url} target="_blank" rel="noreferrer">source url</a></div> : null}
                   {a.parent_asset_id ? <div className="muted">parent: {a.parent_asset_id}</div> : null}
+                  {a.model_provider ? <div className="muted">model: {a.model_provider}/{a.model_name}</div> : null}
                 </div>
                 <div><span className={`badge ${a.approval_state}`}>{a.approval_state}</span></div>
               </div>
             )) : <div className="empty">No assets yet. Upload a file or register path/URL metadata with ownership and role.</div>}
           </div>
         </section>
+      )}
+
+      {tab === "generate" && (
+        <GenerationPanel
+          campaignId={id}
+          assets={(assets ?? []).map((a) => ({
+            id: a.id,
+            title: a.title,
+            role: a.role,
+            mime_type: a.mime_type,
+          }))}
+          jobs={(jobs ?? []).map((j) => ({
+            id: j.id,
+            modality: j.modality,
+            provider: j.provider,
+            model_name: j.model_name,
+            status: j.status,
+            prompt: j.prompt,
+            error_message: j.error_message,
+            result_asset_id: j.result_asset_id,
+            created_at: j.created_at,
+            completed_at: j.completed_at,
+          }))}
+        />
       )}
     </>
   );
