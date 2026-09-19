@@ -26,7 +26,7 @@ npm run dev
 ## Phase status
 - **Phase 0** — stabilize + F&P Studio rebrand. See `docs/FP_STUDIO_PHASE0.md`.
 - **Phase 1** — Campaign Core: campaigns, DNA, research/Originality Guard fields, assets + provenance, optional `campaign-assets` Storage bucket. See `docs/FP_STUDIO_PHASE1.md`.
-- Auth — sign-in, signup, membership bootstrap (`0004`), temporary personal bypass. See `docs/FP_STUDIO_AUTH.md`.
+- Auth — sign-in, signup, forgot password, membership bootstrap (`0004`), temporary personal bypass. See `docs/FP_STUDIO_AUTH.md`.
 
 ## Setup
 1. Create a Supabase project and set values from `.env.example`.

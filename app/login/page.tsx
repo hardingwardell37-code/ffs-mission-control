@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login, personalBypass, signup } from "./actions";
 import { isPersonalBypassEnabled } from "@/lib/studio-bypass";
 
@@ -25,9 +26,9 @@ function errorCopy(error?: string) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
   const message = errorCopy(error);
   const bypassEnabled = isPersonalBypassEnabled();
   const bypassSecretRequired = Boolean(process.env.FP_STUDIO_BYPASS_SECRET);
@@ -41,6 +42,9 @@ export default async function LoginPage({
           Authenticate to enter F&amp;P Studio — Wardell&apos;s personal commercial production
           environment.
         </p>
+        {reset === "1" && (
+          <p className="success">Password updated. Sign in with your new password.</p>
+        )}
         {message && <p className="error">{message}</p>}
 
         <form action={login} className="form">
@@ -53,6 +57,9 @@ export default async function LoginPage({
             Password
             <input name="password" type="password" required autoComplete="current-password" />
           </label>
+          <p className="muted">
+            <Link href="/login/forgot">Forgot password?</Link>
+          </p>
           <button className="button" type="submit">
             Enter F&amp;P Studio
           </button>
