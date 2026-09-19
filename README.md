@@ -23,13 +23,13 @@ npm install
 npm run dev
 ```
 
-## Phase 0 (this branch)
-Stabilize lint/typecheck/test/build, rebrand user-facing copy to F&P Studio, and document architecture reuse for Phase 1. See `docs/FP_STUDIO_PHASE0.md`.
+See `docs/FP_STUDIO_AUTH.md` for sign-in, signup, membership bootstrap (`0004`), and the temporary personal bypass.
 
 ## Setup
-1. Create a Supabase project and set the two public values from `.env.example`.
-2. Apply migrations `0001` then `0002` with the Supabase CLI or SQL editor.
-3. Create an organization and active owner membership for the first authenticated user.
-4. Run `npm run test`, `npm run lint`, `npm run typecheck`, and `npm run build`.
+1. Create a Supabase project and set values from `.env.example`.
+2. Apply migrations `0001`, `0002`, then `0004_studio_bootstrap.sql` (SQL editor or CLI).
+3. Sign up / sign in on `/login` — `ensure_studio_access` creates the personal org + owner membership.
+4. Optional: enable temporary personal bypass with `FP_STUDIO_PERSONAL_BYPASS=true` + `SUPABASE_SERVICE_ROLE_KEY`.
+5. Run `npm run test`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 
 Existing foundation includes authenticated organization-scoped registry, queued tasks, approvals, and audit history. Autonomous execution and external write-capable tools remain disabled.
