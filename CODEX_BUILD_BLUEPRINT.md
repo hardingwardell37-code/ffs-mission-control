@@ -1,3 +1,5 @@
+> **Product rename:** User-facing product is now **F&P Studio**. See `docs/FP_STUDIO_PHASE0.md` and the rebuild handoff. This blueprint remains the historical control-plane implementation guide for the governed registry foundation.
+
 # FFS Mission Control — Codex Build Blueprint
 
 You are implementing a production-minded private AI control plane for Forged Field Systems. Do not turn this into a generic AI dashboard. Mission Control governs agents; it is not itself a monolithic agent.
