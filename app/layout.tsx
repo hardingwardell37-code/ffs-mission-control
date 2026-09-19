@@ -3,8 +3,8 @@ import { Sidebar } from "@/components/sidebar";
 import { signOut } from "@/lib/actions";
 
 export const metadata = {
-  title: "FFS Mission Control",
-  description: "Private control plane for governed AI agents and workflows."
+  title: "F&P Studio",
+  description: "Personal AI commercial production studio and campaign operating system."
 };
 export const dynamic = "force-dynamic";
 
