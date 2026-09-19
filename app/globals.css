@@ -57,6 +57,7 @@ input:focus,textarea:focus,select:focus { outline:2px solid rgba(255,107,26,.35)
 .check input { width:auto; }
 .empty { padding:26px; color:var(--muted); line-height:1.6; }
 .error { margin-top:18px; padding:14px; border:1px solid rgba(239,109,109,.45); background:rgba(239,109,109,.08); color:#ffc2c2; border-radius:8px; }
+.success { margin-top:18px; padding:14px; border:1px solid rgba(105,211,156,.45); background:rgba(105,211,156,.08); color:#b8f0d0; border-radius:8px; }
 .muted { color:var(--muted); font-size:12px; margin-top:4px; }
 .inline { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
 .badge { display:inline-flex; border:1px solid var(--line); border-radius:999px; padding:4px 9px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
