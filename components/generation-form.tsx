@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { cancelGenerationJob, createGenerationJob, runGenerationJob } from "@/lib/actions";
+import { AssetMediaPreview } from "@/components/asset-preview";
 
 type AssetOption = {
   id: string;
@@ -19,6 +20,9 @@ type JobRow = {
   prompt: string;
   error_message: string | null;
   result_asset_id: string | null;
+  result_storage_url?: string | null;
+  result_mime_type?: string | null;
+  result_title?: string | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -211,6 +215,16 @@ export function GenerationPanel({
               <time className="muted">{new Date(j.created_at).toLocaleString()}</time>
               {j.result_asset_id ? (
                 <div className="muted">result asset: {j.result_asset_id.slice(0, 8)}…</div>
+              ) : null}
+              {j.status === "succeeded" && (j.result_storage_url || j.result_asset_id) ? (
+                <div className="job-result-preview">
+                  <AssetMediaPreview
+                    compact
+                    title={j.result_title || "Generated result"}
+                    mimeType={j.result_mime_type}
+                    storageUrl={j.result_storage_url}
+                  />
+                </div>
               ) : null}
               {j.error_message ? <div className="muted">{j.error_message}</div> : null}
             </div>

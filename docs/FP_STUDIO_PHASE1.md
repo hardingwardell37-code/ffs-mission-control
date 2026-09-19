@@ -58,6 +58,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 If the bucket is missing, the asset form **still registers metadata** with the intended path and shows a clear message — production use requires the bucket.
 
+**Previews require `storage_url`.** The Assets / Generate UIs render thumbnails from `storage_url` (image `<img>`, video `<video controls>`). Bucket `campaign-assets` is recommended so uploads and generation re-uploads get durable preview URLs.
+
 Signed-path contract stored on `assets`:
 
 | Column | Meaning |
