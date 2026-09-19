@@ -60,3 +60,44 @@ export interface Campaign {
   createdAt: string;
   updatedAt: string;
 }
+
+export type GenerationProviderId =
+  | "openai_image"
+  | "google_omni"
+  | "fal_minimax_h3"
+  | "fal_minimax_h3_max"
+  | "grok_imagine"
+  | "auto";
+
+export type GenerationModality = "image" | "video";
+
+export type GenerationJobStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+
+export interface GenerationJob {
+  id: string;
+  organizationId: string;
+  campaignId: string;
+  createdBy: string | null;
+  modality: GenerationModality;
+  provider: GenerationProviderId;
+  modelName: string | null;
+  status: GenerationJobStatus;
+  prompt: string;
+  negativePrompt: string;
+  settings: Record<string, unknown>;
+  referenceAssetIds: string[];
+  lockedAssetIds: string[];
+  resultAssetId: string | null;
+  errorMessage: string | null;
+  costCents: number | null;
+  externalJobId: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

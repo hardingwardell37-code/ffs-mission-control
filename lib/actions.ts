@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
-import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaignDna, parseResearchSource, parseTask } from "@/lib/validation";
+import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaignDna, parseGenerationJob, parseResearchSource, parseTask } from "@/lib/validation";
 import { assertApprovalResolution } from "@/lib/domain/approval";
-import { defaultSectionForRole } from "@/lib/domain/campaign";
+import { defaultSectionForModality, defaultSectionForRole } from "@/lib/domain/campaign";
+import { runGenerationRequest } from "@/lib/generation";
+import type { GenerationModality } from "@/types/domain";
 import type { ApprovalStatus, AssetRole } from "@/types/domain";
 import { BYPASS_COOKIE } from "@/lib/studio-bypass";
 import { createClient } from "@/lib/supabase/server";
@@ -214,4 +216,304 @@ export async function registerAsset(form: FormData) {
     },
   });
   revalidatePath(`/campaigns/${campaignId}`);
+}
+
+
+async function assertCampaignAssets(
+  supabase: Awaited<ReturnType<typeof requireContext>>["supabase"],
+  organizationId: string,
+  campaignId: string,
+  assetIds: string[],
+  label: string,
+) {
+  if (!assetIds.length) return;
+  const { data, error } = await supabase
+    .from("assets")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("campaign_id", campaignId)
+    .in("id", assetIds);
+  if (error) throw new Error(error.message);
+  if ((data?.length ?? 0) !== assetIds.length) {
+    throw new Error(`${label} must belong to this campaign`);
+  }
+}
+
+export async function createGenerationJob(form: FormData) {
+  const ctx = await requireContext();
+  const campaignId = String(form.get("campaignId") ?? "");
+  if (!campaignId) throw new Error("Campaign is required");
+  const values = parseGenerationJob(form);
+
+  const { data: campaign } = await ctx.supabase
+    .from("campaigns")
+    .select("id")
+    .eq("id", campaignId)
+    .eq("organization_id", ctx.organizationId)
+    .maybeSingle();
+  if (!campaign) throw new Error("Campaign not found");
+
+  await assertCampaignAssets(ctx.supabase, ctx.organizationId, campaignId, values.reference_asset_ids, "Reference assets");
+  await assertCampaignAssets(ctx.supabase, ctx.organizationId, campaignId, values.locked_asset_ids, "Locked assets");
+
+  const { data, error } = await ctx.supabase.from("generation_jobs").insert({
+    organization_id: ctx.organizationId,
+    campaign_id: campaignId,
+    created_by: ctx.user.id,
+    modality: values.modality,
+    provider: values.provider,
+    model_name: values.model_name,
+    status: "queued",
+    prompt: values.prompt,
+    negative_prompt: values.negative_prompt,
+    settings: values.settings,
+    reference_asset_ids: values.reference_asset_ids,
+    locked_asset_ids: values.locked_asset_ids,
+  }).select("id").single();
+  if (error) throw new Error(error.message);
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "generation.job_created",
+    entityType: "generation_job",
+    entityId: data.id,
+    metadata: {
+      campaignId,
+      modality: values.modality,
+      provider: values.provider,
+      referenceCount: values.reference_asset_ids.length,
+      lockedCount: values.locked_asset_ids.length,
+    },
+  });
+
+  const runNow = form.get("runNow") === "on" || form.get("runNow") === "true" || form.get("runNow") === "1";
+  if (runNow) {
+    await runGenerationJobInternal(ctx, data.id);
+  }
+
+  revalidatePath(`/campaigns/${campaignId}`);
+  return data.id;
+}
+
+async function runGenerationJobInternal(
+  ctx: Awaited<ReturnType<typeof requireContext>>,
+  jobId: string,
+) {
+  const { data: job, error: readError } = await ctx.supabase
+    .from("generation_jobs")
+    .select("*")
+    .eq("id", jobId)
+    .eq("organization_id", ctx.organizationId)
+    .maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!job) throw new Error("Generation job not found");
+  if (job.status === "cancelled") throw new Error("Job was cancelled");
+  if (job.status === "succeeded") return;
+  if (job.status === "running") throw new Error("Job is already running");
+
+  const startedAt = new Date().toISOString();
+  const { error: claimError } = await ctx.supabase
+    .from("generation_jobs")
+    .update({ status: "running", started_at: startedAt, error_message: null })
+    .eq("id", jobId)
+    .eq("organization_id", ctx.organizationId)
+    .in("status", ["queued", "failed"]);
+  if (claimError) throw new Error(claimError.message);
+
+  const refIds: string[] = job.reference_asset_ids ?? [];
+  let referenceUrls: string[] = [];
+  if (refIds.length) {
+    const { data: refs } = await ctx.supabase
+      .from("assets")
+      .select("id,storage_url,source_url")
+      .eq("campaign_id", job.campaign_id)
+      .eq("organization_id", ctx.organizationId)
+      .in("id", refIds);
+    referenceUrls = (refs ?? [])
+      .map((r) => r.storage_url || r.source_url)
+      .filter((u): u is string => Boolean(u));
+  }
+
+  const result = await runGenerationRequest({
+    jobId: job.id,
+    organizationId: ctx.organizationId,
+    campaignId: job.campaign_id,
+    modality: job.modality as GenerationModality,
+    provider: job.provider,
+    modelName: job.model_name,
+    prompt: job.prompt,
+    negativePrompt: job.negative_prompt,
+    settings: (job.settings as Record<string, unknown>) ?? {},
+    referenceAssetIds: refIds,
+    lockedAssetIds: job.locked_asset_ids ?? [],
+    referenceUrls,
+  });
+
+  const completedAt = new Date().toISOString();
+
+  if (!result.ok) {
+    await ctx.supabase
+      .from("generation_jobs")
+      .update({
+        status: "failed",
+        error_message: `[${result.code}] ${result.message}`,
+        external_job_id: result.externalJobId ?? null,
+        completed_at: completedAt,
+        provider: result.resolvedProvider ?? job.provider,
+      })
+      .eq("id", jobId)
+      .eq("organization_id", ctx.organizationId);
+    await writeAudit(ctx.supabase, {
+      organizationId: ctx.organizationId,
+      actorId: ctx.user.id,
+      eventType: "generation.job_failed",
+      entityType: "generation_job",
+      entityId: jobId,
+      metadata: { code: result.code, message: result.message },
+    });
+    return;
+  }
+
+  const modality = job.modality as GenerationModality;
+  const section = defaultSectionForModality(modality);
+  const title = `Generated ${modality} · ${new Date().toISOString().slice(0, 16)}`;
+  const mimeType = result.mimeType ?? (modality === "video" ? "video/mp4" : "image/png");
+
+  let storagePath: string | null = null;
+  let storageUrl: string | null = result.resultUrl ?? null;
+
+  // Prefer storing a path pointer when we only have a remote URL; binary upload can be Phase 2.1.
+  if (result.resultUrl) {
+    storagePath = `generated/${job.campaign_id}/${job.id}`;
+    storageUrl = result.resultUrl;
+  } else if (result.resultBytes && result.resultBytes.length) {
+    storagePath = `generated/${job.campaign_id}/${job.id}`;
+    // Keep bytes out of DB; store metadata + note that binary was received.
+    storageUrl = null;
+  }
+
+  const { data: asset, error: assetError } = await ctx.supabase.from("assets").insert({
+    campaign_id: job.campaign_id,
+    organization_id: ctx.organizationId,
+    title,
+    role: "generated",
+    section,
+    mime_type: mimeType,
+    storage_path: storagePath,
+    storage_url: storageUrl,
+    ownership_status: "generated",
+    origin: "generated",
+    approval_state: "draft",
+    model_provider: result.provider,
+    model_name: result.modelName,
+    prompt: job.prompt,
+    generation_settings: {
+      ...(job.settings as object),
+      negative_prompt: job.negative_prompt,
+      locked_asset_ids: job.locked_asset_ids,
+      has_result_bytes: Boolean(result.resultBytes?.length),
+    },
+    reference_asset_ids: refIds,
+    usage_notes: "Generated by F&P Studio Phase 2. Review before approval gates. Do not treat as final master.",
+    created_by: ctx.user.id,
+  }).select("id").single();
+
+  if (assetError) {
+    await ctx.supabase
+      .from("generation_jobs")
+      .update({
+        status: "failed",
+        error_message: `Provider succeeded but asset create failed: ${assetError.message}`,
+        external_job_id: result.externalJobId ?? null,
+        completed_at: completedAt,
+        provider: result.provider,
+        model_name: result.modelName,
+      })
+      .eq("id", jobId)
+      .eq("organization_id", ctx.organizationId);
+    throw new Error(assetError.message);
+  }
+
+  const { error: doneError } = await ctx.supabase
+    .from("generation_jobs")
+    .update({
+      status: "succeeded",
+      result_asset_id: asset.id,
+      external_job_id: result.externalJobId ?? null,
+      cost_cents: result.costCents ?? null,
+      completed_at: completedAt,
+      error_message: null,
+      provider: result.provider,
+      model_name: result.modelName,
+    })
+    .eq("id", jobId)
+    .eq("organization_id", ctx.organizationId);
+  if (doneError) throw new Error(doneError.message);
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "generation.job_succeeded",
+    entityType: "generation_job",
+    entityId: jobId,
+    metadata: {
+      campaignId: job.campaign_id,
+      assetId: asset.id,
+      provider: result.provider,
+      modelName: result.modelName,
+    },
+  });
+}
+
+export async function runGenerationJob(form: FormData) {
+  const ctx = await requireContext();
+  const jobId = String(form.get("jobId") ?? "");
+  const campaignId = String(form.get("campaignId") ?? "");
+  if (!jobId) throw new Error("Job is required");
+  await runGenerationJobInternal(ctx, jobId);
+  if (campaignId) revalidatePath(`/campaigns/${campaignId}`);
+  else {
+    const { data: job } = await ctx.supabase.from("generation_jobs").select("campaign_id").eq("id", jobId).maybeSingle();
+    if (job?.campaign_id) revalidatePath(`/campaigns/${job.campaign_id}`);
+  }
+}
+
+export async function cancelGenerationJob(form: FormData) {
+  const ctx = await requireContext();
+  const jobId = String(form.get("jobId") ?? "");
+  const campaignId = String(form.get("campaignId") ?? "");
+  if (!jobId) throw new Error("Job is required");
+
+  const { data: job } = await ctx.supabase
+    .from("generation_jobs")
+    .select("id,status,campaign_id")
+    .eq("id", jobId)
+    .eq("organization_id", ctx.organizationId)
+    .maybeSingle();
+  if (!job) throw new Error("Generation job not found");
+  if (job.status === "succeeded") throw new Error("Cannot cancel a succeeded job");
+  if (job.status === "cancelled") return;
+
+  const { error } = await ctx.supabase
+    .from("generation_jobs")
+    .update({
+      status: "cancelled",
+      completed_at: new Date().toISOString(),
+      error_message: "Cancelled by user",
+    })
+    .eq("id", jobId)
+    .eq("organization_id", ctx.organizationId)
+    .in("status", ["queued", "running", "failed"]);
+  if (error) throw new Error(error.message);
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "generation.job_cancelled",
+    entityType: "generation_job",
+    entityId: jobId,
+    metadata: { campaignId: job.campaign_id },
+  });
+  revalidatePath(`/campaigns/${campaignId || job.campaign_id}`);
 }

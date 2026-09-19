@@ -9,9 +9,9 @@ export default async function HomePage(){
     supabase.from("approvals").select("id", { count: "exact", head: true }).eq("organization_id", organizationId).eq("status", "pending"),
   ]);
   return <>
-    <div className="eyebrow">Personal production studio · Phase 1</div>
-    <h1>Campaign core — research, DNA, assets, provenance.</h1>
-    <p className="lede">F&amp;P Studio is campaign-first. Phase 1 lands workspaces, Campaign DNA, research with Originality Guard fields, and an asset library with required provenance — before any generation providers.</p>
+    <div className="eyebrow">Personal production studio · Phase 2</div>
+    <h1>Campaign core + generation jobs.</h1>
+    <p className="lede">F&amp;P Studio is campaign-first. Phase 2 adds provider-routed image/video generation jobs on top of Campaign DNA, research Originality Guard fields, and provenance-tracked assets.</p>
     <section className="grid">
       <div className="card"><div className="label">Campaigns</div><div className="metric">{campaigns.count ?? 0}</div></div>
       <div className="card"><div className="label">Registered agents</div><div className="metric">{agents.count ?? 0}</div></div>

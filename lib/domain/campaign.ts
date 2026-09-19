@@ -1,4 +1,4 @@
-import type { CampaignApprovalActionKey, CampaignEntryMode, AssetRole, AssetOwnership } from "../../types/domain";
+import type { CampaignApprovalActionKey, CampaignEntryMode, AssetRole, AssetOwnership, GenerationProviderId, GenerationModality, GenerationJobStatus } from "../../types/domain";
 
 export const CAMPAIGN_ENTRY_MODES: CampaignEntryMode[] = ["research", "product_url", "upload", "hybrid"];
 export const ASSET_ROLES: AssetRole[] = ["source", "reference", "locked", "generated"];
@@ -31,4 +31,25 @@ export function defaultSectionForRole(role: AssetRole): string {
   if (role === "generated") return "generated_images";
   if (role === "locked") return "uploaded_assets";
   return "uploaded_assets";
+}
+
+export const GENERATION_PROVIDERS: GenerationProviderId[] = [
+  "auto",
+  "grok_imagine",
+  "openai_image",
+  "google_omni",
+  "fal_minimax_h3",
+  "fal_minimax_h3_max",
+];
+export const GENERATION_MODALITIES: GenerationModality[] = ["image", "video"];
+export const GENERATION_JOB_STATUSES: GenerationJobStatus[] = [
+  "queued",
+  "running",
+  "succeeded",
+  "failed",
+  "cancelled",
+];
+
+export function defaultSectionForModality(modality: GenerationModality): string {
+  return modality === "video" ? "generated_video" : "generated_images";
 }
