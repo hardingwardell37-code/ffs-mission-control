@@ -3,9 +3,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
-import { parseAgent, parseTask } from "@/lib/validation";
+import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaignDna, parseResearchSource, parseTask } from "@/lib/validation";
 import { assertApprovalResolution } from "@/lib/domain/approval";
-import type { ApprovalStatus } from "@/types/domain";
+import { defaultSectionForRole } from "@/lib/domain/campaign";
+import type { ApprovalStatus, AssetRole } from "@/types/domain";
 
 export async function createAgent(form: FormData) {
   const ctx = await requireContext(); const values = parseAgent(form);
@@ -65,3 +66,139 @@ export async function rejectApproval(form: FormData) { return resolveApproval(fo
 export async function cancelApproval(form: FormData) { return resolveApproval(form, "cancelled"); }
 
 export async function signOut() { const { supabase } = await requireContext(); await supabase.auth.signOut(); redirect("/login"); }
+
+export async function createCampaign(form: FormData) {
+  const ctx = await requireContext();
+  const values = parseCampaign(form);
+  const { data, error } = await ctx.supabase.from("campaigns").insert({
+    ...values,
+    organization_id: ctx.organizationId,
+    created_by: ctx.user.id,
+  }).select("id").single();
+  if (error) throw new Error(error.message);
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "campaign.created",
+    entityType: "campaign",
+    entityId: data.id,
+    metadata: { entryMode: values.entry_mode, slug: values.slug },
+  });
+  revalidatePath("/campaigns");
+  redirect(`/campaigns/${data.id}`);
+}
+
+export async function updateCampaignBrief(form: FormData) {
+  const ctx = await requireContext();
+  const id = String(form.get("campaignId") ?? "");
+  if (!id) throw new Error("Campaign is required");
+  const values = parseCampaignBrief(form);
+  const patch: Record<string, unknown> = { brief: values.brief, product_url: values.product_url };
+  if (values.status) patch.status = values.status;
+  const { error } = await ctx.supabase.from("campaigns").update(patch).eq("id", id).eq("organization_id", ctx.organizationId);
+  if (error) throw new Error(error.message);
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "campaign.brief_updated",
+    entityType: "campaign",
+    entityId: id,
+  });
+  revalidatePath(`/campaigns/${id}`);
+}
+
+export async function updateCampaignDna(form: FormData) {
+  const ctx = await requireContext();
+  const id = String(form.get("campaignId") ?? "");
+  if (!id) throw new Error("Campaign is required");
+  const values = parseCampaignDna(form);
+  const { data: campaign } = await ctx.supabase.from("campaigns").select("id").eq("id", id).eq("organization_id", ctx.organizationId).maybeSingle();
+  if (!campaign) throw new Error("Campaign not found");
+  const { error } = await ctx.supabase.from("campaign_dna").upsert({
+    campaign_id: id,
+    organization_id: ctx.organizationId,
+    ...values,
+    updated_at: new Date().toISOString(),
+    updated_by: ctx.user.id,
+  }, { onConflict: "campaign_id" });
+  if (error) throw new Error(error.message);
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "campaign.dna_updated",
+    entityType: "campaign",
+    entityId: id,
+  });
+  revalidatePath(`/campaigns/${id}`);
+}
+
+export async function addResearchSource(form: FormData) {
+  const ctx = await requireContext();
+  const campaignId = String(form.get("campaignId") ?? "");
+  if (!campaignId) throw new Error("Campaign is required");
+  const values = parseResearchSource(form);
+  const { data: campaign } = await ctx.supabase.from("campaigns").select("id").eq("id", campaignId).eq("organization_id", ctx.organizationId).maybeSingle();
+  if (!campaign) throw new Error("Campaign not found");
+  const { data, error } = await ctx.supabase.from("research_sources").insert({
+    ...values,
+    campaign_id: campaignId,
+    organization_id: ctx.organizationId,
+    created_by: ctx.user.id,
+  }).select("id").single();
+  if (error) throw new Error(error.message);
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "campaign.research_added",
+    entityType: "research_source",
+    entityId: data.id,
+    metadata: { campaignId, url: values.url },
+  });
+  revalidatePath(`/campaigns/${campaignId}`);
+}
+
+export async function registerAsset(form: FormData) {
+  const ctx = await requireContext();
+  const campaignId = String(form.get("campaignId") ?? "");
+  if (!campaignId) throw new Error("Campaign is required");
+  const values = parseAsset(form);
+  const { data: campaign } = await ctx.supabase.from("campaigns").select("id").eq("id", campaignId).eq("organization_id", ctx.organizationId).maybeSingle();
+  if (!campaign) throw new Error("Campaign not found");
+  const section = values.section || defaultSectionForRole(values.role as AssetRole);
+  const { data, error } = await ctx.supabase.from("assets").insert({
+    campaign_id: campaignId,
+    organization_id: ctx.organizationId,
+    title: values.title,
+    role: values.role,
+    section,
+    mime_type: values.mime_type,
+    storage_path: values.storage_path,
+    storage_url: values.storage_url,
+    file_size: values.file_size,
+    ownership_status: values.ownership_status,
+    source_url: values.source_url,
+    origin: values.origin,
+    parent_asset_id: values.parent_asset_id,
+    usage_notes: values.usage_notes,
+    model_provider: values.model_provider,
+    model_name: values.model_name,
+    prompt: values.prompt,
+    created_by: ctx.user.id,
+  }).select("id").single();
+  if (error) throw new Error(error.message);
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "campaign.asset_registered",
+    entityType: "asset",
+    entityId: data.id,
+    metadata: {
+      campaignId,
+      role: values.role,
+      ownership: values.ownership_status,
+      origin: values.origin,
+      storagePath: values.storage_path,
+    },
+  });
+  revalidatePath(`/campaigns/${campaignId}`);
+}
