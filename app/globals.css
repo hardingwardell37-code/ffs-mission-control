@@ -82,3 +82,10 @@ input:focus,textarea:focus,select:focus { outline:2px solid rgba(255,107,26,.35)
 .badge.succeeded, .badge.running { color:var(--success); border-color:rgba(105,211,156,.3); }
 .badge.cancelled { color:var(--muted); }
 .badge.draft, .badge.paused, .badge.archived { color:var(--muted); }
+.asset-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+.asset-card { border:1px solid var(--line); background:rgba(18,22,26,.88); border-radius:12px; padding:14px; display:grid; gap:8px; align-content:start; }
+.asset-thumb { display:grid; gap:8px; }
+.asset-thumb img, .asset-thumb video { width:100%; max-width:240px; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid var(--line); background:#0d1114; }
+.asset-thumb.compact img, .asset-thumb.compact video { max-width:160px; aspect-ratio:4/3; }
+.asset-open { font-size:12px; color:var(--accent); text-decoration:underline; text-underline-offset:2px; width:fit-content; }
+.job-result-preview { margin-top:10px; }

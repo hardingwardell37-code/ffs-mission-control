@@ -4,6 +4,7 @@ import { requireContext } from "@/lib/auth";
 import { addResearchSource, updateCampaignBrief, updateCampaignDna } from "@/lib/actions";
 import { AssetUploadForm } from "@/components/asset-upload";
 import { GenerationPanel } from "@/components/generation-form";
+import { AssetMediaPreview } from "@/components/asset-preview";
 
 const TABS = [
   ["overview", "Overview"],
@@ -37,6 +38,8 @@ export default async function CampaignDetailPage({
   ]);
 
   if (!campaign) notFound();
+
+  const assetById = new Map((assets ?? []).map((a) => [a.id as string, a]));
 
   return (
     <>
@@ -140,29 +143,43 @@ export default async function CampaignDetailPage({
       {tab === "assets" && (
         <section className="section">
           <AssetUploadForm campaignId={id} organizationId={organizationId} />
-          <div className="table section">
-            <div className="row header asset-row"><div>Asset</div><div>Role / ownership</div><div>Provenance</div><div>State</div></div>
-            {assets?.length ? assets.map((a) => (
-              <div className="row asset-row" key={a.id}>
-                <div>
+          {assets?.length ? (
+            <div className="asset-grid section">
+              {assets.map((a) => (
+                <article className="asset-card" key={a.id}>
+                  <AssetMediaPreview
+                    title={a.title}
+                    mimeType={a.mime_type}
+                    storageUrl={a.storage_url}
+                    storagePath={a.storage_path}
+                  />
                   <strong>{a.title}</strong>
-                  <div className="muted">{a.mime_type || "unknown type"}{a.section ? ` · ${a.section}` : ""}{a.file_size != null ? ` · ${a.file_size} bytes` : ""}</div>
-                </div>
-                <div>
-                  <span className="badge">{a.role}</span>{" "}
-                  <span className="badge">{a.ownership_status}</span>
-                </div>
-                <div>
+                  <div className="muted">
+                    {a.mime_type || "unknown type"}
+                    {a.section ? ` · ${a.section}` : ""}
+                    {a.file_size != null ? ` · ${a.file_size} bytes` : ""}
+                  </div>
+                  <div className="chip-row">
+                    <span className="badge">{a.role}</span>
+                    <span className="badge">{a.ownership_status}</span>
+                    <span className={`badge ${a.approval_state}`}>{a.approval_state}</span>
+                  </div>
                   <div className="muted">origin: {a.origin}</div>
                   {a.storage_path ? <div className="muted">path: {a.storage_path}</div> : null}
-                  {a.source_url ? <div className="muted"><a href={a.source_url} target="_blank" rel="noreferrer">source url</a></div> : null}
-                  {a.parent_asset_id ? <div className="muted">parent: {a.parent_asset_id}</div> : null}
-                  {a.model_provider ? <div className="muted">model: {a.model_provider}/{a.model_name}</div> : null}
-                </div>
-                <div><span className={`badge ${a.approval_state}`}>{a.approval_state}</span></div>
-              </div>
-            )) : <div className="empty">No assets yet. Upload a file or register path/URL metadata with ownership and role.</div>}
-          </div>
+                  {a.source_url ? (
+                    <div className="muted">
+                      <a href={a.source_url} target="_blank" rel="noreferrer">source url</a>
+                    </div>
+                  ) : null}
+                  {a.model_provider ? (
+                    <div className="muted">model: {a.model_provider}/{a.model_name}</div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty section">No assets yet. Upload a file or register path/URL metadata with ownership and role.</div>
+          )}
         </section>
       )}
 
@@ -175,18 +192,24 @@ export default async function CampaignDetailPage({
             role: a.role,
             mime_type: a.mime_type,
           }))}
-          jobs={(jobs ?? []).map((j) => ({
-            id: j.id,
-            modality: j.modality,
-            provider: j.provider,
-            model_name: j.model_name,
-            status: j.status,
-            prompt: j.prompt,
-            error_message: j.error_message,
-            result_asset_id: j.result_asset_id,
-            created_at: j.created_at,
-            completed_at: j.completed_at,
-          }))}
+          jobs={(jobs ?? []).map((j) => {
+            const result = j.result_asset_id ? assetById.get(j.result_asset_id) : undefined;
+            return {
+              id: j.id,
+              modality: j.modality,
+              provider: j.provider,
+              model_name: j.model_name,
+              status: j.status,
+              prompt: j.prompt,
+              error_message: j.error_message,
+              result_asset_id: j.result_asset_id,
+              result_storage_url: result?.storage_url ?? null,
+              result_mime_type: result?.mime_type ?? null,
+              result_title: result?.title ?? null,
+              created_at: j.created_at,
+              completed_at: j.completed_at,
+            };
+          })}
         />
       )}
     </>

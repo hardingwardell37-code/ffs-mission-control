@@ -83,7 +83,7 @@ Explicit provider selection still requires that provider’s key.
 | --- | --- |
 | `/campaigns/[id]?tab=generate` | Generation form + job list |
 
-Successful runs insert an `assets` row with `role=generated`, provenance (`model_provider`, `model_name`, `prompt`, `reference_asset_ids`), and link `generation_jobs.result_asset_id`.
+Successful runs insert an `assets` row with `role=generated`, provenance (`model_provider`, `model_name`, `prompt`, `reference_asset_ids`), and link `generation_jobs.result_asset_id`. Results are uploaded to bucket **`campaign-assets`** when possible; **previews require `storage_url`** (Assets / Generate tabs).
 
 ---
 
@@ -93,7 +93,7 @@ Successful runs insert an `assets` row with `role=generated`, provenance (`model
 - No motion / VFX pipeline
 - No autonomous skip of approval gates
 - No billing
-- Binary upload of provider bytes into Storage can deepen in 2.1; URL results are linked now
+- ~~Binary upload of provider bytes into Storage~~ — `runGenerationJob` now uploads `resultBytes` (and re-uploads `resultUrl` when fetchable) into bucket `campaign-assets` at `generated/{campaign_id}/{job_id}.{ext}`; remote URL kept as fallback if reupload fails. **Previews require `storage_url`.**
 
 ---
 
