@@ -1,4 +1,5 @@
 "use server";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/auth";
@@ -7,6 +8,8 @@ import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaig
 import { assertApprovalResolution } from "@/lib/domain/approval";
 import { defaultSectionForRole } from "@/lib/domain/campaign";
 import type { ApprovalStatus, AssetRole } from "@/types/domain";
+import { BYPASS_COOKIE } from "@/lib/studio-bypass";
+import { createClient } from "@/lib/supabase/server";
 
 export async function createAgent(form: FormData) {
   const ctx = await requireContext(); const values = parseAgent(form);
@@ -65,7 +68,17 @@ export async function approveApproval(form: FormData) { return resolveApproval(f
 export async function rejectApproval(form: FormData) { return resolveApproval(form, "rejected"); }
 export async function cancelApproval(form: FormData) { return resolveApproval(form, "cancelled"); }
 
-export async function signOut() { const { supabase } = await requireContext(); await supabase.auth.signOut(); redirect("/login"); }
+export async function signOut() {
+  const store = await cookies();
+  store.delete(BYPASS_COOKIE);
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // Configuration may be incomplete; clearing the bypass cookie is enough to leave.
+  }
+  redirect("/login");
+}
 
 export async function createCampaign(form: FormData) {
   const ctx = await requireContext();
