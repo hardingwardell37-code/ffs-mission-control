@@ -11,6 +11,8 @@ loop those rules require — how agents close the loop without waiting on Wardel
 Specialist role cards (Creative Director, Critic) live in [`roster/`](roster/).
 Lead Research stays with the existing Grok Bot — not a third in-app agent.
 
+Creative Generate skills (adapted SuperCMO craft) live in [`skills/`](skills/). See [`skills/ORIGINALITY.md`](skills/ORIGINALITY.md) — blank unlabeled cans fail; no Coke / competitor IP.
+
 ---
 
 ## Why this is the first thing to build

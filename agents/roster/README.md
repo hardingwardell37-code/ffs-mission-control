@@ -22,3 +22,7 @@ third roster file or DB seed agent for it.
 3. Verify finished work with the loop in [`../VERIFICATION.md`](../VERIFICATION.md) (`./verify check`, `./verify map`).
 
 Adapted from [unicodef1wn/grokbot-field-notes](https://github.com/unicodef1wn/grokbot-field-notes) roster entries; scoped to F&P Studio commercial stills/video, not a full org dump.
+
+## Creative skills
+
+Campaign Generate craft (packshots, static ads, commercials) lives in [`../skills/`](../skills/). Read [`../skills/ORIGINALITY.md`](../skills/ORIGINALITY.md) before any pack/ad/video generation. Critic bar: photoreal + labeled packs (blank cans fail).
