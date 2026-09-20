@@ -26,3 +26,7 @@ Adapted from [unicodef1wn/grokbot-field-notes](https://github.com/unicodef1wn/gr
 ## Creative skills
 
 Campaign Generate craft (packshots, static ads, commercials) lives in [`../skills/`](../skills/). Read [`../skills/ORIGINALITY.md`](../skills/ORIGINALITY.md) before any pack/ad/video generation. Critic bar: photoreal + labeled packs (blank cans fail).
+
+## Learning loop
+
+All roster roles consult and grow [`../skills/studio-learning-loop/`](../skills/studio-learning-loop/) — especially [`LEARNING_LOG.md`](../skills/studio-learning-loop/LEARNING_LOG.md) — so keepers and fails (with why) compound across jobs.
