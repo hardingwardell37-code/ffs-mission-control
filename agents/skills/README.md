@@ -10,6 +10,8 @@ See [`ATTRIBUTION.md`](ATTRIBUTION.md) for source URL, adaptation date, and lice
 Strategy/copy skills adapted from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) (**MIT**).  
 See [`marketingskills-ATTRIBUTION.md`](marketingskills-ATTRIBUTION.md).
 
+`static-ad-prompt-generator` adapted from a public X post by [@alex_prompter](https://x.com/alex_prompter) (https://x.com/alex_prompter/status/1996343755981369363); see [`static-ad-prompt-generator/ATTRIBUTION.md`](static-ad-prompt-generator/ATTRIBUTION.md). Not affiliated; not Nano Banana JSON.
+
 Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 
 ## Adapted vs omitted
@@ -24,6 +26,7 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | `product-marketing` | Rest of marketingskills (~50 skills), evals, tools CLIs |
 | `ad-creative` | Upstream `ads`, `marketing-loops`, `copy-editing`, etc. |
 | `copywriting` | — (lean: SKILL + references only) |
+| `static-ad-prompt-generator` | — (F&P 2-phase intake; adapted from public X post; **not** Nano Banana JSON) |
 
 ## When to use each skill
 
@@ -37,12 +40,14 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | Positioning / ICP / shared marketing context before other copy work | [`product-marketing/`](product-marketing/) |
 | Paid ad headlines, primary text, creative batches, static templates, hooks | [`ad-creative/`](ad-creative/) |
 | Landing / homepage / page conversion copy | [`copywriting/`](copywriting/) |
+| Fast 2-phase intake → Generate-ready static ad prompt + negative + settings | [`static-ad-prompt-generator/`](static-ad-prompt-generator/) |
 
 Plain product photography with **no** ad message → product-photos.  
 Finished ad layout with offer / claim → image-ads (general).  
 **Use `high-end-photoreal-ads` when Wardell wants high-end photoreal ads** (editorial / series / luxury end card / product system) — not packshots alone. Keep `generating-image-ads` as general; this skill is the F&P quality bar / style lock.  
 Moving commercial → ad-videos.
 AdScoop / Meta Library research into F&P → [`adscoop-to-fp-handoff/`](adscoop-to-fp-handoff/) (swipe principles only; AdScoop is external research, not a generator).
+Fast intake → photoreal Generate prompt package → [`static-ad-prompt-generator/`](static-ad-prompt-generator/) (then run craft via `high-end-photoreal-ads`; Critic before review).
 
 Strategy/copy frameworks (`product-marketing`, `ad-creative`, `copywriting`) inform messaging — they do **not** replace Generate craft. Finished photoreal statics still go through `high-end-photoreal-ads` + `ORIGINALITY.md`.
 
