@@ -117,3 +117,4 @@ Register assets; present the set in outlined order; Critic before user review.
 
 - `references/ad-craft.md`
 - [`../ORIGINALITY.md`](../ORIGINALITY.md)
+- High-end F&P quality bar / style lock → [`../high-end-photoreal-ads/`](../high-end-photoreal-ads/)
