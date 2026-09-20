@@ -16,6 +16,7 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | `generating-image-ads` | Full SuperCMO monorepo / MCP stack |
 | `generating-ad-videos` | UGC, cartoon, competitor-research pipelines, evals, fonts |
 | `high-end-photoreal-ads` | — (F&P style lock; grounded in local example refs) |
+| `adscoop-to-fp-handoff` | — (F&P research handoff; AdScoop external, not vendored) |
 
 ## When to use each skill
 
@@ -25,11 +26,13 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | Static social / banner / offer ad with headline & CTA | [`generating-image-ads/`](generating-image-ads/) |
 | High-end photoreal ads (not packshots alone) — F&P quality bar / style lock | [`high-end-photoreal-ads/`](high-end-photoreal-ads/) |
 | Product commercial / brand film / TV-style spot | [`generating-ad-videos/`](generating-ad-videos/) |
+| Meta Ad Library winners via AdScoop → F&P campaign DNA / Generate | [`adscoop-to-fp-handoff/`](adscoop-to-fp-handoff/) |
 
 Plain product photography with **no** ad message → product-photos.  
 Finished ad layout with offer / claim → image-ads (general).  
 **Use `high-end-photoreal-ads` when Wardell wants high-end photoreal ads** (editorial / series / luxury end card / product system) — not packshots alone. Keep `generating-image-ads` as general; this skill is the F&P quality bar / style lock.  
 Moving commercial → ad-videos.
+AdScoop / Meta Library research into F&P → [`adscoop-to-fp-handoff/`](adscoop-to-fp-handoff/) (swipe principles only; AdScoop is external research, not a generator).
 
 ## Critic bar
 
