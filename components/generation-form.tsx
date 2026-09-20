@@ -130,6 +130,7 @@ export function GenerationPanel({
             Provider
             <select name="provider" defaultValue="auto">
               <option value="auto">Auto (env-aware)</option>
+              <option value="runway">Runway Gen-4 Image</option>
               <option value="grok_imagine">Grok Imagine</option>
               <option value="openai_image">OpenAI Image</option>
               <option value="google_omni">Google Omni</option>

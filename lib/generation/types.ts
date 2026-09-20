@@ -6,6 +6,7 @@ export type GenerationProviderId =
   | "fal_minimax_h3"
   | "fal_minimax_h3_max"
   | "grok_imagine"
+  | "runway"
   | "auto";
 
 export type GenerationModality = "image" | "video";
@@ -79,6 +80,7 @@ export interface EnvAvailability {
   googleOmni: boolean;
   fal: boolean;
   xai: boolean;
+  runway: boolean;
 }
 
 export function readEnvAvailability(env: NodeJS.ProcessEnv = process.env): EnvAvailability {
@@ -91,5 +93,6 @@ export function readEnvAvailability(env: NodeJS.ProcessEnv = process.env): EnvAv
     ),
     fal: Boolean(env.FAL_KEY?.trim()),
     xai: Boolean(env.XAI_API_KEY?.trim()),
+    runway: Boolean(env.RUNWAYML_API_SECRET?.trim() || env.RUNWAY_API_KEY?.trim()),
   };
 }

@@ -89,6 +89,7 @@ describe("generation validation", () => {
   });
   it("exposes generation provider ids", () => {
     expect(GENERATION_PROVIDERS).toContain("auto");
+    expect(GENERATION_PROVIDERS).toContain("runway");
     expect(GENERATION_PROVIDERS).toContain("grok_imagine");
     expect(GENERATION_PROVIDERS).toContain("fal_minimax_h3");
   });

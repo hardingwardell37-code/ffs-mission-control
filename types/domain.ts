@@ -67,6 +67,7 @@ export type GenerationProviderId =
   | "fal_minimax_h3"
   | "fal_minimax_h3_max"
   | "grok_imagine"
+  | "runway"
   | "auto";
 
 export type GenerationModality = "image" | "video";
