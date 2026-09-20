@@ -4,6 +4,10 @@ Append-only. Newest entries at the **top**. Read before Generate. See [`SKILL.md
 
 ---
 
+### 2026-09-20 — HOUSE RULE: video includes sound (Wardell)
+- **Rule:** All video has sound (music/SFX/VO as craft requires) unless the brief says **no sound** or **sound will be added later**.
+- **Carry forward:** Do not treat silent I2V as a finished deliverable by default. Plan audio in the board; if provider I2V is silent, audio post is part of Generate—not optional—unless Wardell waived it.
+
 ### 2026-09-20 — Milepost 41 video — SKILLS/MEMORY LOCK (Wardell)
 - **Outcome:** Locked single paste-ready **15s hard-cut** prompt for Pro; v3.1 board + audio post plan; Clip A PE lock for gen4.5
 - **Credits:** Runway **web Pro credits ≠ Dev API credits**. Empty API wallet blocks box Generate even if Pro has 2k+ credits. Fund [dev.runwayml.com](https://dev.runwayml.com) or swap API key.
