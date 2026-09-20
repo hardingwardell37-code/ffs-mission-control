@@ -15,14 +15,15 @@ describe("runway provider", () => {
     delete process.env.RUNWAY_API_KEY;
   });
 
-  it("defaults model to gen4_image_turbo", () => {
-    expect(DEFAULT_MODEL).toBe("gen4_image_turbo");
+  it("defaults model to gpt_image_2", () => {
+    expect(DEFAULT_MODEL).toBe("gpt_image_2");
   });
 
-  it("maps UI aspect 1:1 to 1080:1080", () => {
-    expect(resolveRatio({ aspect_ratio: "1:1" })).toBe("1080:1080");
-    expect(resolveRatio({ ratio: "1:1" })).toBe("1080:1080");
-    expect(resolveRatio(undefined)).toBe("1080:1080");
+  it("maps UI aspect 1:1 to 1920:1920 for gpt_image_2 default", () => {
+    expect(resolveRatio({ aspect_ratio: "1:1" })).toBe("1920:1920");
+    expect(resolveRatio({ ratio: "1:1" })).toBe("1920:1920");
+    expect(resolveRatio(undefined)).toBe("1920:1920");
+    expect(resolveRatio({ aspect_ratio: "1:1" }, "gen4_image_turbo")).toBe("1080:1080");
   });
 
   it("utf16Length matches JS string length (UTF-16 code units)", () => {
@@ -104,7 +105,7 @@ describe("runway provider", () => {
     if (!result.ok) expect(result.code).toBe("unsupported_modality");
   });
 
-  it("returns provider_error before POST when prompt exceeds UTF-16 limit", async () => {
+  it("returns provider_error before POST when Gen-4 prompt exceeds 1000 UTF-16", async () => {
     process.env.RUNWAYML_API_SECRET = "test-secret";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -116,6 +117,7 @@ describe("runway provider", () => {
       campaignId: "camp",
       modality: "image",
       provider: "runway",
+      modelName: "gen4_image_turbo",
       prompt: "p".repeat(RUNWAY_PROMPT_MAX_UTF16 + 50),
     });
 
@@ -127,7 +129,7 @@ describe("runway provider", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("creates task with default turbo model and returns output[0] after SUCCEEDED poll", async () => {
+  it("creates task with default gpt_image_2 and returns output[0] after SUCCEEDED poll", async () => {
     process.env.RUNWAYML_API_SECRET = "test-secret";
     const fetchMock = vi
       .fn()
@@ -166,7 +168,7 @@ describe("runway provider", () => {
     if (result.ok) {
       expect(result.resultUrl).toBe("https://cdn.example/runway.png");
       expect(result.externalJobId).toBe("task-1");
-      expect(result.modelName).toBe("gen4_image_turbo");
+      expect(result.modelName).toBe("gpt_image_2");
     }
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const createCall = fetchMock.mock.calls[0];
@@ -174,7 +176,7 @@ describe("runway provider", () => {
     expect(createCall[1].headers.Authorization).toBe("Bearer test-secret");
     expect(createCall[1].headers["X-Runway-Version"]).toBe("2024-11-06");
     const body = JSON.parse(createCall[1].body);
-    expect(body).toMatchObject({ model: "gen4_image_turbo", ratio: "1080:1080" });
+    expect(body).toMatchObject({ model: "gpt_image_2", ratio: "1920:1920" });
   });
 
   it("honors model override via modelName and settings.model", async () => {

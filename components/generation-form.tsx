@@ -154,13 +154,14 @@ export function GenerationPanel({
           <textarea name="negativePrompt" rows={2} maxLength={4000} placeholder="blurry, watermark, brand marks…" />
         </label>
         <p className="muted">
-          Runway <code>promptText</code> max is <strong>1000 UTF-16 code units</strong> (JS string length).
+          Runway Gen-4 / Muse <code>promptText</code> max is <strong>1000 UTF-16</strong>; GPT Image 2 allows up to <strong>32000</strong>.
           Over-limit prompts fail clearly so Prompt Engineer can rewrite — no silent truncation.
         </p>
         <label>
           Model
           <select name="modelName" defaultValue="">
-            <option value="">Provider default (Runway: Gen-4 Image Turbo · 2 credits)</option>
+            <option value="">Provider default (Runway: GPT Image 2)</option>
+            <option value="gpt_image_2">GPT Image 2 (1–41 credits by quality)</option>
             <option value="gen4_image_turbo">Gen-4 Image Turbo (2 credits)</option>
             <option value="muse_image">Muse Image (1 credit)</option>
             <option value="gen4_image">Gen-4 Image (5–8 credits)</option>
