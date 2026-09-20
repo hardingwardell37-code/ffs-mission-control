@@ -2,6 +2,7 @@ import { createFalMinimaxH3MaxProvider, createFalMinimaxH3Provider } from "./pro
 import { createGoogleOmniProvider } from "./providers/google-omni";
 import { createGrokImagineProvider } from "./providers/grok-imagine";
 import { createOpenAiImageProvider } from "./providers/openai-image";
+import { createRunwayProvider } from "./providers/runway";
 import type {
   EnvAvailability,
   GenerationModality,
@@ -13,6 +14,7 @@ import type {
 import { readEnvAvailability } from "./types";
 
 const providers = {
+  runway: createRunwayProvider,
   grok_imagine: createGrokImagineProvider,
   openai_image: createOpenAiImageProvider,
   google_omni: createGoogleOmniProvider,
@@ -32,7 +34,7 @@ export function listProviders(): GenerationProvider[] {
 
 /**
  * Auto router:
- * - image → Grok Imagine if XAI_API_KEY, else OpenAI Image, else Google Omni
+ * - image → Runway Gen-4 if RUNWAYML_API_SECRET, else Grok Imagine, else OpenAI Image, else Google Omni
  * - video → fal MiniMax H3 if FAL_KEY, else Grok Imagine if XAI_API_KEY, else Google Omni
  * Returns null when no suitable configured provider exists.
  */
@@ -41,6 +43,7 @@ export function resolveAutoProvider(
   env: EnvAvailability = readEnvAvailability(),
 ): ConcreteProviderId | null {
   if (modality === "image") {
+    if (env.runway) return "runway";
     if (env.xai) return "grok_imagine";
     if (env.openai) return "openai_image";
     if (env.googleOmni) return "google_omni";
@@ -76,7 +79,7 @@ export async function runGenerationRequest(
       code: "not_configured",
       message:
         request.modality === "image"
-          ? "No image provider is configured. Set XAI_API_KEY, OPENAI_API_KEY, or GOOGLE_OMNI_API_KEY on the server."
+          ? "No image provider is configured. Set RUNWAYML_API_SECRET, XAI_API_KEY, OPENAI_API_KEY, or GOOGLE_OMNI_API_KEY on the server."
           : "No video provider is configured. Set FAL_KEY or XAI_API_KEY on the server.",
     };
   }

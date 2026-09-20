@@ -17,6 +17,10 @@ const sql0005 = readFileSync(
   new URL("../supabase/migrations/0005_generation_jobs.sql", import.meta.url),
   "utf8",
 );
+const sql0006 = readFileSync(
+  new URL("../supabase/migrations/0006_runway_provider.sql", import.meta.url),
+  "utf8",
+);
 
 describe("organization isolation migration", () => {
   it("removes broad foundation policies", () =>
@@ -99,3 +103,12 @@ describe("generation jobs migration", () => {
     expect(sql0005).toContain("locked assets must belong to the same campaign");
   });
 });
+
+describe("runway provider migration", () => {
+  it("adds runway to generation_provider enum", () => {
+    expect(sql0006).toContain("generation_provider");
+    expect(sql0006).toContain("'runway'");
+    expect(sql0006).toMatch(/ADD VALUE IF NOT EXISTS/i);
+  });
+});
+

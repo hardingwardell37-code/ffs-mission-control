@@ -35,6 +35,7 @@ export function defaultSectionForRole(role: AssetRole): string {
 
 export const GENERATION_PROVIDERS: GenerationProviderId[] = [
   "auto",
+  "runway",
   "grok_imagine",
   "openai_image",
   "google_omni",

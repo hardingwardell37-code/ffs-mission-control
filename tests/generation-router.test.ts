@@ -6,47 +6,107 @@ import {
 } from "../lib/generation/router";
 import type { EnvAvailability } from "../lib/generation/types";
 
-const emptyEnv: EnvAvailability = { openai: false, googleOmni: false, fal: false, xai: false };
+const emptyEnv: EnvAvailability = {
+  openai: false,
+  googleOmni: false,
+  fal: false,
+  xai: false,
+  runway: false,
+};
 
 describe("generation auto router", () => {
-  it("prefers Grok Imagine for images when XAI_API_KEY is available", () => {
-    const env: EnvAvailability = { openai: true, googleOmni: true, fal: true, xai: true };
+  it("prefers Runway for images when RUNWAYML_API_SECRET is available", () => {
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: true,
+      xai: true,
+      runway: true,
+    };
+    expect(resolveAutoProvider("image", env)).toBe("runway");
+  });
+
+  it("prefers Grok Imagine for images when Runway is unavailable but xAI is", () => {
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: true,
+      xai: true,
+      runway: false,
+    };
     expect(resolveAutoProvider("image", env)).toBe("grok_imagine");
   });
 
-  it("falls back to OpenAI for images without xAI", () => {
-    const env: EnvAvailability = { openai: true, googleOmni: true, fal: true, xai: false };
+  it("falls back to OpenAI for images without Runway or xAI", () => {
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: true,
+      xai: false,
+      runway: false,
+    };
     expect(resolveAutoProvider("image", env)).toBe("openai_image");
   });
 
-  it("falls back to Google Omni for images without OpenAI or xAI", () => {
-    const env: EnvAvailability = { openai: false, googleOmni: true, fal: true, xai: false };
+  it("falls back to Google Omni for images without OpenAI, xAI, or Runway", () => {
+    const env: EnvAvailability = {
+      openai: false,
+      googleOmni: true,
+      fal: true,
+      xai: false,
+      runway: false,
+    };
     expect(resolveAutoProvider("image", env)).toBe("google_omni");
   });
 
   it("returns null for images when no image keys exist", () => {
-    const env: EnvAvailability = { openai: false, googleOmni: false, fal: true, xai: false };
+    const env: EnvAvailability = {
+      openai: false,
+      googleOmni: false,
+      fal: true,
+      xai: false,
+      runway: false,
+    };
     expect(resolveAutoProvider("image", env)).toBeNull();
   });
 
   it("prefers fal MiniMax H3 for video when FAL_KEY is present", () => {
-    const env: EnvAvailability = { openai: true, googleOmni: true, fal: true, xai: true };
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: true,
+      xai: true,
+      runway: true,
+    };
     expect(resolveAutoProvider("video", env)).toBe("fal_minimax_h3");
   });
 
   it("falls back to Grok Imagine for video without fal", () => {
-    const env: EnvAvailability = { openai: true, googleOmni: true, fal: false, xai: true };
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: false,
+      xai: true,
+      runway: true,
+    };
     expect(resolveAutoProvider("video", env)).toBe("grok_imagine");
   });
 
   it("falls back to Google Omni for video without fal or xAI", () => {
-    const env: EnvAvailability = { openai: true, googleOmni: true, fal: false, xai: false };
+    const env: EnvAvailability = {
+      openai: true,
+      googleOmni: true,
+      fal: false,
+      xai: false,
+      runway: false,
+    };
     expect(resolveAutoProvider("video", env)).toBe("google_omni");
   });
 
   it("resolves explicit providers without rewriting", () => {
     expect(resolveProviderId("openai_image", "image")).toBe("openai_image");
     expect(resolveProviderId("grok_imagine", "image")).toBe("grok_imagine");
+    expect(resolveProviderId("runway", "image")).toBe("runway");
     expect(resolveProviderId("fal_minimax_h3_max", "video")).toBe("fal_minimax_h3_max");
   });
 });
@@ -67,7 +127,7 @@ describe("generation missing keys", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("not_configured");
-      expect(result.message).toMatch(/XAI_API_KEY|OPENAI_API_KEY|GOOGLE_OMNI/i);
+      expect(result.message).toMatch(/RUNWAYML_API_SECRET|XAI_API_KEY|OPENAI_API_KEY|GOOGLE_OMNI/i);
     }
   });
 
@@ -119,6 +179,35 @@ describe("generation missing keys", () => {
       }
     } finally {
       if (prev !== undefined) process.env.XAI_API_KEY = prev;
+    }
+  });
+
+  it("returns not_configured for Runway without RUNWAYML_API_SECRET", async () => {
+    const prevSecret = process.env.RUNWAYML_API_SECRET;
+    const prevAlias = process.env.RUNWAY_API_KEY;
+    delete process.env.RUNWAYML_API_SECRET;
+    delete process.env.RUNWAY_API_KEY;
+    try {
+      const result = await runGenerationRequest(
+        {
+          jobId: "00000000-0000-0000-0000-000000000005",
+          organizationId: "org",
+          campaignId: "camp",
+          modality: "image",
+          provider: "runway",
+          prompt: "Original product hero on slate",
+        },
+        emptyEnv,
+      );
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("not_configured");
+        expect(result.message).toMatch(/RUNWAYML_API_SECRET/);
+        expect(result.provider).toBe("runway");
+      }
+    } finally {
+      if (prevSecret !== undefined) process.env.RUNWAYML_API_SECRET = prevSecret;
+      if (prevAlias !== undefined) process.env.RUNWAY_API_KEY = prevAlias;
     }
   });
 
