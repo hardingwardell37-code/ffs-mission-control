@@ -10,5 +10,6 @@ Layout and photography patterns only. Files live in [`examples/`](examples/).
 | `examples/02-branded-series.jpg` | `branded-series-frame` | 4-up series; thick brand-color field/border; consistent logo + footer CTA across frames; photoreal people; speech-bubble / graphic overlays |
 | `examples/03-luxury-product-storyboard.png` | `luxury-end-card` | 5-panel **9:16** luxury product film board ending in a static end card with a short tagline; reflective glass/metal; continuity of product across panels |
 | `examples/04-wellness-product-system.jpg` | `product-system-frame` | 3×3 product system; pack color matches environment; footer lock (logo + tagline + URL); mix of lifestyle, hero, and family frames |
+| `examples/05-cinematic-outdoor-hero.jpg` | `cinematic-outdoor-hero` | Three-quarter product in environment; wet/reflective ground; blue-hour + warm practicals; small product line → large serif/display headline in negative space → feature bar → boxed CTA + URL; product owns frame. **Layout/photography only — do not copy Cadillac or any real OEM trade dress into campaign work; use Campaign DNA.** |
 
 Open the matching file when selecting a mode in `SKILL.md`. Distill structure — do not restage the example’s commercial IP.
