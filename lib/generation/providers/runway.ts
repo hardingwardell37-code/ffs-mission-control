@@ -2,40 +2,161 @@ import type { CreateGenerationProvider, JobRequest, JobResult } from "../types";
 
 const RUNWAY_BASE = "https://api.dev.runwayml.com";
 const RUNWAY_VERSION = "2024-11-06";
-const DEFAULT_MODEL = "gen4_image";
-const DEFAULT_RATIO = "1080:1080";
+/** Wardell default: GPT Image 2 via Runway (1–41 credits by quality/resolution). */
+export const DEFAULT_MODEL = "gpt_image_2";
+/** Gen-4 family 1:1 default. */
+const DEFAULT_RATIO_GEN4 = "1080:1080";
+/** GPT Image 2 1:1 (1080:1080 not in gpt_image_2 ratio enum). */
+const DEFAULT_RATIO_GPT = "1920:1920";
+/** Gen-4 / muse promptText max (UTF-16). GPT Image 2 allows up to 32000. */
+export const RUNWAY_PROMPT_MAX_UTF16 = 1000;
+export const RUNWAY_PROMPT_MAX_UTF16_GPT_IMAGE_2 = 32000;
 
-function apiSecret(): string | undefined {
-  return (
-    process.env.RUNWAYML_API_SECRET?.trim() ||
-    process.env.RUNWAY_API_KEY?.trim() ||
-    undefined
-  );
+const KNOWN_MODELS = new Set([
+  "gpt_image_2",
+  "gen4_image_turbo",
+  "gen4_image",
+  "muse_image",
+]);
+
+const GEN4_RATIOS = new Set([
+  "1080:1080",
+  "1920:1080",
+  "1080:1920",
+  "1440:1080",
+  "1080:1440",
+  "1024:1024",
+  "720:720",
+]);
+
+const GPT_IMAGE_2_RATIOS = new Set([
+  "1920:1920",
+  "2560:2560",
+  "2880:2880",
+  "1920:1088",
+  "1088:1920",
+  "1920:1280",
+  "1280:1920",
+  "auto",
+]);
+
+/** JS string.length counts UTF-16 code units (what Runway validates). */
+export function utf16Length(text: string): number {
+  return text.length;
 }
 
-/** Map common aspect settings to Runway Gen-4 Image ratios. Prefer documented 1080:1080 for 1:1. */
-function resolveRatio(settings?: Record<string, unknown>): string {
+function resolveModel(request: JobRequest): string {
+  const fromSettings =
+    typeof request.settings?.model === "string" ? request.settings.model.trim() : "";
+  const fromRequest = request.modelName?.trim() || "";
+  const raw = fromSettings || fromRequest;
+  if (!raw) return DEFAULT_MODEL;
+  if (KNOWN_MODELS.has(raw)) return raw;
+  // Pass through only safe model id shapes (lowercase alnum + underscore / hyphen).
+  if (/^[a-z][a-z0-9_-]{0,63}$/i.test(raw)) return raw;
+  return DEFAULT_MODEL;
+}
+
+export function promptLimitForModel(model: string): number {
+  return model === "gpt_image_2" ? RUNWAY_PROMPT_MAX_UTF16_GPT_IMAGE_2 : RUNWAY_PROMPT_MAX_UTF16;
+}
+
+/** Map common aspect settings to model-valid Runway ratios. */
+export function resolveRatio(settings?: Record<string, unknown>, model: string = DEFAULT_MODEL): string {
   const raw =
     (typeof settings?.ratio === "string" && settings.ratio) ||
     (typeof settings?.aspect_ratio === "string" && settings.aspect_ratio) ||
     "";
   const normalized = raw.trim().toLowerCase().replace(/x/g, ":");
-  if (!normalized) return DEFAULT_RATIO;
+  const isGpt = model === "gpt_image_2";
+  const fallback = isGpt ? DEFAULT_RATIO_GPT : DEFAULT_RATIO_GEN4;
+  const allowed = isGpt ? GPT_IMAGE_2_RATIOS : GEN4_RATIOS;
 
-  const map: Record<string, string> = {
-    "1:1": "1080:1080",
-    "1080:1080": "1080:1080",
-    "1024:1024": "1080:1080",
-    "16:9": "1920:1080",
-    "1920:1080": "1920:1080",
-    "9:16": "1080:1920",
-    "1080:1920": "1080:1920",
-    "4:3": "1440:1080",
-    "1440:1080": "1440:1080",
-    "3:4": "1080:1440",
-    "1080:1440": "1080:1440",
+  const map: Record<string, string> = isGpt
+    ? {
+        "1:1": "1920:1920",
+        "1920:1920": "1920:1920",
+        "1080:1080": "1920:1920",
+        "1024:1024": "1920:1920",
+        "16:9": "1920:1088",
+        "9:16": "1088:1920",
+        auto: "auto",
+      }
+    : {
+        "1:1": "1080:1080",
+        "1080:1080": "1080:1080",
+        "1024:1024": "1080:1080",
+        "16:9": "1920:1080",
+        "1920:1080": "1920:1080",
+        "9:16": "1080:1920",
+        "1080:1920": "1080:1920",
+        "4:3": "1440:1080",
+        "1440:1080": "1440:1080",
+        "3:4": "1080:1440",
+        "1080:1440": "1080:1440",
+      };
+
+  if (!normalized) return fallback;
+  const mapped = map[normalized] || (allowed.has(normalized) ? normalized : fallback);
+  return allowed.has(mapped) ? mapped : fallback;
+}
+
+/**
+ * Build promptText under Runway's UTF-16 limit.
+ * Main prompt over limit → fail (no silent mid-word truncate).
+ * Negatives append as short "Avoid: …" only when they fit; else omit / shorten at word boundary.
+ */
+export function buildRunwayPromptText(
+  prompt: string,
+  negativePrompt?: string,
+  maxUtf16: number = RUNWAY_PROMPT_MAX_UTF16,
+): { ok: true; promptText: string; omittedNegative: boolean } | { ok: false; message: string } {
+  const base = prompt;
+  const baseLen = utf16Length(base);
+  if (baseLen > maxUtf16) {
+    return {
+      ok: false,
+      message:
+        `Runway promptText max is ${maxUtf16} UTF-16 code units; got ${baseLen}. ` +
+        `Rewrite a shorter prompt (Prompt Engineer) — the API rejects longer text with "Validation of body failed". ` +
+        `This integration does not silently truncate the main prompt.`,
+    };
+  }
+
+  const neg = negativePrompt?.trim();
+  if (!neg) {
+    return { ok: true, promptText: base, omittedNegative: false };
+  }
+
+  const avoidPrefix = "\n\nAvoid: ";
+  const budget = maxUtf16 - baseLen - utf16Length(avoidPrefix);
+  if (budget <= 0) {
+    return { ok: true, promptText: base, omittedNegative: true };
+  }
+
+  if (utf16Length(neg) <= budget) {
+    return { ok: true, promptText: `${base}${avoidPrefix}${neg}`, omittedNegative: false };
+  }
+
+  const shortened = shortenAtWordBoundary(neg, budget);
+  if (!shortened) {
+    return { ok: true, promptText: base, omittedNegative: true };
+  }
+  return {
+    ok: true,
+    promptText: `${base}${avoidPrefix}${shortened}`,
+    omittedNegative: true,
   };
-  return map[normalized] || DEFAULT_RATIO;
+}
+
+/** Shorten to ≤ max UTF-16 units at a word boundary; empty if nothing fits. */
+function shortenAtWordBoundary(text: string, maxUnits: number): string {
+  if (maxUnits <= 0) return "";
+  if (utf16Length(text) <= maxUnits) return text;
+  const slice = text.slice(0, maxUnits);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut = lastSpace > Math.floor(maxUnits * 0.4) ? slice.slice(0, lastSpace) : slice;
+  return cut.trimEnd();
 }
 
 function authHeaders(secret: string): HeadersInit {
@@ -48,12 +169,20 @@ function authHeaders(secret: string): HeadersInit {
 
 async function generateImage(request: JobRequest, secret: string): Promise<JobResult> {
   const id = "runway" as const;
-  const model = request.modelName?.trim() || DEFAULT_MODEL;
-  let promptText = request.prompt;
-  if (request.negativePrompt?.trim()) {
-    promptText = `${promptText}\n\nAvoid: ${request.negativePrompt.trim()}`;
+  const model = resolveModel(request);
+  const limit = promptLimitForModel(model);
+  const built = buildRunwayPromptText(request.prompt, request.negativePrompt, limit);
+  if (!built.ok) {
+    return {
+      ok: false,
+      provider: id,
+      code: "provider_error",
+      message: built.message,
+      metadata: { model, promptUtf16: utf16Length(request.prompt), limit },
+    };
   }
-  const ratio = resolveRatio(request.settings);
+  const { promptText, omittedNegative } = built;
+  const ratio = resolveRatio(request.settings, model);
 
   const submitRes = await fetch(`${RUNWAY_BASE}/v1/text_to_image`, {
     method: "POST",
@@ -85,7 +214,13 @@ async function generateImage(request: JobRequest, secret: string): Promise<JobRe
       provider: id,
       code: "provider_error",
       message: errMsg,
-      metadata: { status: submitRes.status, model, ratio },
+      metadata: {
+        status: submitRes.status,
+        model,
+        ratio,
+        promptUtf16: utf16Length(promptText),
+        omittedNegative,
+      },
     };
   }
 
@@ -98,7 +233,7 @@ async function generateImage(request: JobRequest, secret: string): Promise<JobRe
       resultUrl: submitBody.output[0],
       mimeType: "image/png",
       externalJobId: submitBody.id ?? null,
-      metadata: { ratio },
+      metadata: { ratio, omittedNegative },
     };
   }
 
@@ -156,7 +291,7 @@ async function generateImage(request: JobRequest, secret: string): Promise<JobRe
           resultUrl,
           mimeType: "image/png",
           externalJobId: taskId,
-          metadata: { ratio },
+          metadata: { ratio, omittedNegative },
         };
       }
       return {
@@ -200,7 +335,7 @@ export const createRunwayProvider: CreateGenerationProvider = () => {
   const id = "runway" as const;
   return {
     id,
-    displayName: "Runway Gen-4 Image",
+    displayName: "Runway Image",
     supportedModalities: ["image"],
     isConfigured() {
       return Boolean(apiSecret());
@@ -213,7 +348,7 @@ export const createRunwayProvider: CreateGenerationProvider = () => {
           provider: id,
           code: "not_configured",
           message:
-            "RUNWAYML_API_SECRET is not set. Add it on the server (Netlify env) to enable Runway Gen-4 Image generation.",
+            "RUNWAYML_API_SECRET is not set. Add it on the server (Netlify env) to enable Runway image generation.",
         };
       }
 
@@ -223,7 +358,7 @@ export const createRunwayProvider: CreateGenerationProvider = () => {
           ok: false,
           provider: id,
           code: "unsupported_modality",
-          message: "Runway Gen-4 Image supports image modality only in this integration.",
+          message: "Runway supports image modality only in this integration.",
         };
       } catch (err) {
         return {
@@ -236,3 +371,11 @@ export const createRunwayProvider: CreateGenerationProvider = () => {
     },
   };
 };
+
+function apiSecret(): string | undefined {
+  return (
+    process.env.RUNWAYML_API_SECRET?.trim() ||
+    process.env.RUNWAY_API_KEY?.trim() ||
+    undefined
+  );
+}
