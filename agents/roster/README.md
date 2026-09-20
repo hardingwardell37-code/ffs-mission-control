@@ -1,13 +1,13 @@
 # F&P Studio agent roster (lean)
 
-Paste-ready specialist roles for F&P Studio. **Two roles only** for now —
-keep the team lean (one-bot-one-job; anti-sprawl). Do not dump the full
+Paste-ready specialist roles for F&P Studio. **Lean roster** (one-bot-one-job; anti-sprawl). Add roles only when Wardell asks. Do not dump the full
 field-notes catalogue here.
 
 | Role | File | One line |
 |---|---|---|
 | Creative Director / Media Explorer | [`creative-director.md`](creative-director.md) | Exploration briefs → N still/video candidates via studio generation; original pack labels grounded in Campaign DNA. |
 | Critic | [`critic.md`](critic.md) | Rubric QC on stills/video before user review — photoreal, labels, lighting, originality, prompt fidelity. Feedback only. |
+| Ad Library Scout | [`ad-library-scout.md`](ad-library-scout.md) | Public ad libraries (static+video) → long-running structure patterns → original F&P concepts + brands that may need ads. Research only. |
 
 ## Lead Research is not a third in-app agent
 
