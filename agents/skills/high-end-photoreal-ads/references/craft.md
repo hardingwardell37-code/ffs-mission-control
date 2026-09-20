@@ -36,6 +36,16 @@ Read with the matching example open. Treatment follows the mode; originality and
 - Product system: pack color matches environment; footer lock (logo + tagline + URL); mix lifestyle + hero + family without breaking the lock.
 - Luxury board → end card: short tagline on the final static frame; hold product identity across panels.
 
+## Cinematic outdoor hero
+
+Mode `cinematic-outdoor-hero` (example 05). Product owns the frame in a real environment — not a packshot on seamless.
+
+- **Hierarchy** — small product/line lockup → large serif or display headline in sky/negative space → quiet feature/spec bar → outline or boxed CTA + URL below. Product is the visual weight; type steps down cleanly.
+- **Wet ground reflections** — damp stone/pavement mirrors headlights, warm practicals, and cool sky; keep reflections sharp and grounded, not CGI gloss.
+- **Cool ambient + warm fill** — blue-hour / dusk ambient with warm practicals from architecture or interior light; one coherent key, honest rim on metal/glass.
+- **CTA treatment** — thin outline / boxed rectangle (not a filled pill); URL sits under the box in quiet sans. Prefer outline when the photo is already dramatic.
+- **Safe margins** — headline, feature bar, boxed CTA, and URL clear of edges and platform chrome; leave breathing room in the negative-space sky band.
+
 ## Aspect and margins
 
 - Generate the **true aspect** the brief asks for (default **1:1** feed unless told; storyboard end cards may be **9:16** when briefed).

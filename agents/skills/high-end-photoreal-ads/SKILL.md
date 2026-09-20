@@ -1,7 +1,7 @@
 ---
 name: high-end-photoreal-ads
 description: |
-  Use when Wardell wants high-end photoreal static ads at the F&P quality bar / style lock — editorial fashion frames, branded series, luxury end cards, or product-system grids. Ground layout and photography ONLY in references/examples/. Not for bare packshots (generating-product-photos). Keep generating-image-ads as the general static-ad skill; this skill raises the craft bar.
+  Use when Wardell wants high-end photoreal static ads at the F&P quality bar / style lock — editorial fashion frames, branded series, luxury end cards, product-system grids, or cinematic outdoor heroes. Ground layout and photography ONLY in references/examples/. Not for bare packshots (generating-product-photos). Keep generating-image-ads as the general static-ad skill; this skill raises the craft bar.
 license: Apache-2.0
 metadata:
   version: "0.1.0-fp"
@@ -46,6 +46,7 @@ Pick one mode that matches the brief; cite the matching example file:
 | `branded-series-frame` | `02-branded-series.jpg` | Multi-up series; thick brand-color field/border; consistent logo + footer CTA; photoreal people; speech-bubble / graphic overlays |
 | `luxury-end-card` | `03-luxury-product-storyboard.png` | Luxury product film board → static **end card** with short tagline; reflective glass/metal; 9:16 panels when briefed |
 | `product-system-frame` | `04-wellness-product-system.jpg` | Multi-frame product system; pack color matches environment; footer lock (logo + tagline + URL); lifestyle + hero + family |
+| `cinematic-outdoor-hero` | `05-cinematic-outdoor-hero.jpg` | Three-quarter product in environment; wet/reflective ground; blue-hour + warm practicals; small product line → large serif/display headline in negative space → feature bar → boxed CTA + URL; product owns frame |
 
 Full index: [`references/EXAMPLE_INDEX.md`](references/EXAMPLE_INDEX.md).
 
