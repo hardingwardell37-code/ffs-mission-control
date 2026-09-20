@@ -8,6 +8,9 @@ That sentence is the symptom. This file is the cure.
 House rules live in [`AGENTS.md`](../AGENTS.md). This file is the verification
 loop those rules require — how agents close the loop without waiting on Wardell.
 
+Specialist role cards (Creative Director, Critic) live in [`roster/`](roster/).
+Lead Research stays with the existing Grok Bot — not a third in-app agent.
+
 ---
 
 ## Why this is the first thing to build

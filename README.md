@@ -42,3 +42,4 @@ Existing foundation includes authenticated organization-scoped registry, campaig
 
 ## Agent verification
 Agents: see `agents/VERIFICATION.md` and run `./verify` (check / map / screenshot).
+Lean specialist roles: `agents/roster/` (Creative Director + Critic only; Lead Research = Grok Bot).
