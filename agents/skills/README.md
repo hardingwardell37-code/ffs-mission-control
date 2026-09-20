@@ -4,8 +4,12 @@ Lean creative skills for portfolio campaign work — starting with **Last Sip Fi
 
 ## Credit
 
-Adapted from [SupercmoHQ/superCMO-skills](https://github.com/SupercmoHQ/superCMO-skills) (**Apache-2.0**).  
-See [`ATTRIBUTION.md`](ATTRIBUTION.md) for source URL, adaptation date, and license notice.  
+Creative generation skills adapted from [SupercmoHQ/superCMO-skills](https://github.com/SupercmoHQ/superCMO-skills) (**Apache-2.0**).  
+See [`ATTRIBUTION.md`](ATTRIBUTION.md) for source URL, adaptation date, and license notice.
+
+Strategy/copy skills adapted from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) (**MIT**).  
+See [`marketingskills-ATTRIBUTION.md`](marketingskills-ATTRIBUTION.md).
+
 Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 
 ## Adapted vs omitted
@@ -17,6 +21,9 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | `generating-ad-videos` | UGC, cartoon, competitor-research pipelines, evals, fonts |
 | `high-end-photoreal-ads` | — (F&P style lock; grounded in local example refs) |
 | `adscoop-to-fp-handoff` | — (F&P research handoff; AdScoop external, not vendored) |
+| `product-marketing` | Rest of marketingskills (~50 skills), evals, tools CLIs |
+| `ad-creative` | Upstream `ads`, `marketing-loops`, `copy-editing`, etc. |
+| `copywriting` | — (lean: SKILL + references only) |
 
 ## When to use each skill
 
@@ -27,12 +34,17 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | High-end photoreal ads (not packshots alone) — F&P quality bar / style lock | [`high-end-photoreal-ads/`](high-end-photoreal-ads/) |
 | Product commercial / brand film / TV-style spot | [`generating-ad-videos/`](generating-ad-videos/) |
 | Meta Ad Library winners via AdScoop → F&P campaign DNA / Generate | [`adscoop-to-fp-handoff/`](adscoop-to-fp-handoff/) |
+| Positioning / ICP / shared marketing context before other copy work | [`product-marketing/`](product-marketing/) |
+| Paid ad headlines, primary text, creative batches, static templates, hooks | [`ad-creative/`](ad-creative/) |
+| Landing / homepage / page conversion copy | [`copywriting/`](copywriting/) |
 
 Plain product photography with **no** ad message → product-photos.  
 Finished ad layout with offer / claim → image-ads (general).  
 **Use `high-end-photoreal-ads` when Wardell wants high-end photoreal ads** (editorial / series / luxury end card / product system) — not packshots alone. Keep `generating-image-ads` as general; this skill is the F&P quality bar / style lock.  
 Moving commercial → ad-videos.
 AdScoop / Meta Library research into F&P → [`adscoop-to-fp-handoff/`](adscoop-to-fp-handoff/) (swipe principles only; AdScoop is external research, not a generator).
+
+Strategy/copy frameworks (`product-marketing`, `ad-creative`, `copywriting`) inform messaging — they do **not** replace Generate craft. Finished photoreal statics still go through `high-end-photoreal-ads` + `ORIGINALITY.md`.
 
 ## Critic bar
 
