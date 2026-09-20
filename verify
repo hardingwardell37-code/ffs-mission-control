@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# F&P Studio agent verification CLI.
+# Deterministic, prints what it did, safe to re-run.
+# Exit non-zero on failure for check (and unknown commands).
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+usage() {
+  cat <<'USAGE'
+F&P Studio verify — agent verification CLI
+
+Usage:
+  ./verify help                 List commands
+  ./verify check                Run lint, typecheck, test (and build if feasible)
+  ./verify map                  Print feature-map.yaml
+  ./verify screenshot assets    Proof stub for Assets / campaigns smoke
+
+Env for screenshot:
+  LIVE_URL or BASE_URL — if unset, live screenshot is deferred (exit 0)
+USAGE
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  help|-h|--help|"")
+    usage
+    exit 0
+    ;;
+
+  check)
+    echo "==> ./verify check (cwd=$ROOT)"
+    failed=0
+    ran=()
+
+    run_script() {
+      local name="$1"
+      if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts['$name'] ? 0 : 1)"; then
+        echo "-- npm run $name"
+        ran+=("$name")
+        if npm run "$name"; then
+          echo "OK: $name"
+        else
+          echo "FAIL: $name"
+          failed=1
+        fi
+      else
+        echo "-- skip $name (no package.json script)"
+      fi
+    }
+
+    run_script lint
+    run_script typecheck
+    run_script test
+
+    # build is optional / timeboxed: run only if VERIFY_BUILD=1
+    if [[ "${VERIFY_BUILD:-}" == "1" ]]; then
+      run_script build
+    else
+      echo "-- skip build (set VERIFY_BUILD=1 to include)"
+    fi
+
+    echo "==> ran: ${ran[*]:-none}"
+    if [[ "$failed" -ne 0 ]]; then
+      echo "==> check FAILED"
+      exit 1
+    fi
+    echo "==> check PASSED"
+    exit 0
+    ;;
+
+  map)
+    echo "==> ./verify map"
+    if [[ ! -f feature-map.yaml ]]; then
+      echo "FAIL: feature-map.yaml missing at repo root"
+      exit 1
+    fi
+    echo "-- keys:"
+    # top-level keys only (lines that start a mapping at column 0)
+    grep -E '^[a-zA-Z_][a-zA-Z0-9_]*:' feature-map.yaml | sed 's/:.*//' || true
+    echo "-- full feature-map.yaml:"
+    cat feature-map.yaml
+    exit 0
+    ;;
+
+  screenshot)
+    target="${1:-assets}"
+    echo "==> ./verify screenshot $target"
+    echo "-- Stub: browser automation for proof screenshots is not wired yet."
+    echo "-- Intended later: capture Assets tab thumbnails + full-size open on campaign detail."
+    base="${LIVE_URL:-${BASE_URL:-}}"
+    if [[ -z "$base" ]]; then
+      echo "-- LIVE_URL / BASE_URL unset: live screenshot deferred."
+      echo "-- To smoke-check later: LIVE_URL=https://your-host ./verify screenshot assets"
+      echo "-- (will HEAD/GET /campaigns and report status; no invented browser automation)"
+      exit 0
+    fi
+    base="${base%/}"
+    url="${base}/campaigns"
+    echo "-- LIVE_URL/BASE_URL set; curling HEAD then GET: $url"
+    code=""
+    if code=$(curl -sS -o /dev/null -w '%{http_code}' -I --max-time 15 "$url" 2>/dev/null); then
+      echo "-- HEAD /campaigns -> HTTP $code"
+    else
+      echo "-- HEAD failed; trying GET"
+    fi
+    if code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url"); then
+      echo "-- GET /campaigns -> HTTP $code"
+      if [[ "$code" =~ ^[23] ]]; then
+        echo "-- smoke OK (screenshot capture still deferred — no browser automation yet)"
+        exit 0
+      fi
+      echo "-- unexpected status $code"
+      exit 1
+    else
+      echo "FAIL: curl could not reach $url"
+      exit 1
+    fi
+    ;;
+
+  *)
+    echo "Unknown command: $cmd" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

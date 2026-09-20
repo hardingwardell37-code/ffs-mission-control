@@ -1,0 +1,60 @@
+# F&P Studio feature map — machine-readable critical flows for agents.
+# Keep in sync with app routes. Cite via: ./verify map
+
+login:
+  path: /login
+  requires_auth: false
+  entry: open /login; sign in, or use temporary personal bypass when FP_STUDIO_PERSONAL_BYPASS=true
+  flows:
+    - happy_path: email/password sign-in -> studio home / campaigns
+    - personal_bypass: when FP_STUDIO_PERSONAL_BYPASS=true (+ service role), submit bypass form -> authenticated session cookie
+    - forgot_password: /login/forgot -> email reset -> /login/update-password
+  invariants:
+    - unauthenticated users cannot reach /campaigns or campaign detail
+    - personal bypass only available when env flag is true; never invent bypass in UI copy for production users
+
+campaigns_list:
+  path: /campaigns
+  requires_auth: true
+  entry: nav "Campaigns" or open /campaigns after login
+  flows:
+    - happy_path: list campaigns -> open one -> /campaigns/[id]
+    - empty_state: no campaigns shows create/empty guidance
+  invariants:
+    - only org-scoped campaigns for the signed-in studio membership are listed
+    - each row links to /campaigns/[id]
+
+campaign_detail:
+  path: /campaigns/[id]
+  requires_auth: true
+  entry: click a campaign on /campaigns, or open /campaigns/[id] directly
+  flows:
+    - tabs: overview | dna | research | assets | generate (query ?tab=)
+    - default_tab: overview when tab missing or unknown
+  invariants:
+    - Generate and Assets tabs are always present for a valid campaign id
+    - unknown ids do not leak other orgs' data
+
+generate_flow:
+  path: /campaigns/[id]?tab=generate
+  requires_auth: true
+  entry: Campaign detail -> Generate tab
+  flows:
+    - happy_path: create generation job -> run (provider when keys present) -> asset registered with preview on Assets
+    - no_provider_keys: job can queue/scaffold without calling external providers
+  invariants:
+    - a successful run registers an asset linked to the campaign
+    - preview URL or durable storage path is available for stills when generation completes
+    - agents do not regenerate Last Sip First stills or change provider wiring unless the task says so
+
+assets_preview:
+  path: /campaigns/[id]?tab=assets
+  requires_auth: true
+  entry: Campaign detail -> Assets tab (after generate or upload)
+  flows:
+    - happy_path: list assets -> see image/video thumbnail -> open full-size (source or preview URL)
+    - empty_state: no assets yet points user toward Generate or upload
+  invariants:
+    - thumbnails render for image/video assets that have a preview or storage URL
+    - full-size open uses the asset source/preview URL in a new tab or equivalent
+    - provenance fields remain visible where present

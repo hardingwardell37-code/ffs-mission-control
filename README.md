@@ -39,3 +39,6 @@ npm run dev
 7. Run `npm run test`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 
 Existing foundation includes authenticated organization-scoped registry, campaigns/assets, generation job scaffolding, queued tasks, approvals, and audit history. Autonomous execution remains disabled; providers only run when keys are present.
+
+## Agent verification
+Agents: see `agents/VERIFICATION.md` and run `./verify` (check / map / screenshot).
