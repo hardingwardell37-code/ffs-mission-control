@@ -27,6 +27,7 @@ Hard F&P rules: [`ORIGINALITY.md`](ORIGINALITY.md).
 | `ad-creative` | Upstream `ads`, `marketing-loops`, `copy-editing`, etc. |
 | `copywriting` | — (lean: SKILL + references only) |
 | `static-ad-prompt-generator` | — (F&P 2-phase intake; adapted from public X post; **not** Nano Banana JSON) |
+| `studio-learning-loop` | — (F&P continuous improvement: read/write LEARNING_LOG on keep/fail) |
 
 ## When to use each skill
 
@@ -81,3 +82,8 @@ Agents:
 ## Optional regen brief
 
 [`last-sip-first-regen-brief.md`](last-sip-first-regen-brief.md) — short brief for regenerating Last Sip First storyboard stills **after** this skills PR merges (regen itself is a follow-up).
+
+
+## Studio learning loop
+
+Before Generate and after every Critic/Wardell verdict, run [`studio-learning-loop`](studio-learning-loop/SKILL.md) and update [`studio-learning-loop/LEARNING_LOG.md`](studio-learning-loop/LEARNING_LOG.md). Keepers and fails (with **why**) live there so the roster improves over time.

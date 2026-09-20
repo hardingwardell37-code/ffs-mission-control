@@ -70,3 +70,7 @@ If it passes, reply with one line saying so.
 
 - [`creative-director.md`](creative-director.md)
 - [`../VERIFICATION.md`](../VERIFICATION.md)
+
+## Learning loop
+
+After scoring, give Lead Research one line of **why** (pass or fail) suitable for [`../skills/studio-learning-loop/LEARNING_LOG.md`](../skills/studio-learning-loop/LEARNING_LOG.md). Critic does not edit the log.
