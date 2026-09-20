@@ -4,7 +4,7 @@ description: |
   ALWAYS read this skill before F&P campaign Generate / commercial video / brand-film asks. Makes a product ad video — product showcase or story/lifestyle commercial — from Campaign DNA + locked refs, holding pack identity across clips. Triggers: F&P Generate commercials, "product ad", "commercial", "TV ad", "brand film", "product-hero video". Not for UGC/reviews and not for cloning competitor ads.
 license: Apache-2.0
 metadata:
-  version: "0.3.0-fp"
+  version: "0.4.0-fp"
   category: creative
   summary: "F&P Studio adaptation: cinematic product commercials via Generate jobs — storyboarded clips, pack-identity lock, original DNA labels, stitch-ready provider prompts."
   adapted_from: "SupercmoHQ/superCMO-skills generating-ad-videos (Apache-2.0)"
@@ -111,3 +111,34 @@ Join in order when studio stitch/export exists; else return ordered clips. Regis
 
 - `references/commercial-craft.md`
 - [`../ORIGINALITY.md`](../ORIGINALITY.md)
+
+## Runway commercial lessons (F&P · Milepost 41, 2026-09-20)
+
+### Credits
+- **Runway web Pro / Max credits are NOT Dev API credits.** Box Generate uses `RUNWAYML_API_SECRET` against `api.dev.runwayml.com`. If API returns “not enough credits,” fund the Dev org or replace the API key — Pro balance will not help.
+- Prefer delivering a **single paste-ready 15s (or 3×5s) prompt pack** for Wardell to run in Pro when API wallet is empty.
+
+### Cost models (I2V)
+- **gen4_turbo** (~5 credits/sec) — lean tests / mid amenity
+- **gen4.5** (~12 credits/sec) — hero establish + packshot when craft bar is high (~$20k feel)
+- Clip length: prefer **5s segments**, stitch to 15s
+
+### When category must read on mute (e.g. travel plaza)
+1. **Ad Library Scout** winning VIDEO structures before motion spend
+2. **Video Director** board: hard cuts, not one soft I2V push
+3. Open **0–3s plaza-proof:** category wordmark + canopy/multi-pump + lot depth + **moving** truck/RV (never empty frozen lot / one parked RV only)
+4. Then walk-in → interior life → rest with residual motion → packshot with far-bg vehicle life
+5. Supporting amenities (e.g. Free Air) **never** substitute for life and never open the spot
+
+### Audio (mandatory for “finished”)
+Runway I2V is **silent**. Finished commercial = stitch + **post**:
+- Music bed (original / licensed instrumental — no famous tracks)
+- SFX synced to picture (lot, pumps, doors, kitchen)
+- VO from Copywriter
+- Mix priority: **VO > SFX > music**
+
+### Roster
+Video Director → Copywriter VO → Prompt Engineer clip locks → Generate → Critic → [`studio-learning-loop`](../studio-learning-loop/SKILL.md)
+
+### Reference artifacts
+`/workspace/mile-one-reset/VIDEO_STORYBOARD.md` · `VIDEO_PLAZA_SCOUT.md` · `PRO_15S_PROMPTS.md` · `generate-video-clip-a.md`

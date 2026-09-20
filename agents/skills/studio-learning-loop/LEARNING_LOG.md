@@ -4,6 +4,107 @@ Append-only. Newest entries at the **top**. Read before Generate. See [`SKILL.md
 
 ---
 
+### 2026-09-20 — Milepost 41 video — SKILLS/MEMORY LOCK (Wardell)
+- **Outcome:** Locked single paste-ready **15s hard-cut** prompt for Pro; v3.1 board + audio post plan; Clip A PE lock for gen4.5
+- **Credits:** Runway **web Pro credits ≠ Dev API credits**. Empty API wallet blocks box Generate even if Pro has 2k+ credits. Fund [dev.runwayml.com](https://dev.runwayml.com) or swap API key.
+- **Craft bar:** ~$20k commercial feel — lot traffic + interior life + hard cuts + music/SFX/VO in post. Silent I2V alone = fail.
+- **Plaza video pattern (Scout):** 0–3s plaza-proof (TRAVEL PLAZA + canopy + lot depth + moving truck/RV) → walk-in → interior bustle → rest with residual motion → packshot with bg life. Free Air ≠ life / never hero.
+- **Pipeline:** DNA → keeper still → Video Director board → Copywriter VO → PE clip locks → Generate (gen4_turbo lean / **gen4.5** heroes) → stitch + audio post → Critic → learning log
+- **Carry forward:** Always Scout category VIDEO winners before motion spend; deliver Pro paste prompt when API wallet empty; amenity props = realism + placement + hierarchy (supporting cast)
+
+### 2026-09-20 — Milepost 41 video — BAR RAISE (Wardell)
+- **Bar:** Must feel like a professional ~$20k studio commercial
+- **Missing on Clip A/A2:** SFX, background music, lot/interior **movement** (too still / silent I2V)
+- **Carry forward:** Silent gen4 I2V ≠ finished ad. Plan multi-shot motion (lot traffic, interior life) + post audio bed/SFX/VO. Consider gen4.5 for hero clips. Extra still plates for interiors/lot may be required before I2V.
+
+### 2026-09-20 — Milepost 41 Clip A — HOLD / REVISE (Wardell)
+- **Verdict:** Soft fail on category clarity — motion alone not enough; video must **read as travel plaza**
+- **Action:** Ad Library Scout → winning travel-plaza VIDEO structures; Video Director revises board before more gen4_turbo spend
+- **Carry forward:** I2V from a still isn’t enough if plaza proof isn’t in the motion storyboard; open on unmistakable plaza language (canopy, trucks/RVs, pumps, lot, mark)
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v7.3 — KEEPER (Critic; pending Wardell)
+- **Verdict:** Critic Pass · keeper — Free Air hose attached to cabinet port/bracket; plaza+type SUBJECT; Free Air minor
+- **Pipeline:** PE v7.3 hose-attach lock → gpt_image_2 · ONE
+- **Carry forward:** Inspect hose mechanical attachment (reel/bracket/port), not only coil shape; Wardell final visual call before video board
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v7.2 — FAIL (Wardell hose)
+- **Verdict:** Wardell Fail after Critic Pass — Free Air hose **not connected** to the machine; drapes to ground (AI tell)
+- **What worked:** Plaza hierarchy; lot-edge placement; digital tower silhouette
+- **Carry forward:** Air hose must show a clear mechanical connection to the cabinet (reel/bracket/port). Disconnected ground hose = fail. Inspect prop attachments, not only silhouette/placement.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v7.2 — KEEPER (Critic; pending Wardell)
+- **Verdict:** Critic Pass · keeper — plaza + canopy + type own frame; Free Air minor lot-edge digital tower
+- **Pipeline:** Scout realism + placement + hierarchy locks → PE v7.2 → gpt_image_2 · ONE
+- **Carry forward:** Amenity props = correct machine + correct site + never the subject; Video Director next once Wardell locks still
+
+### 2026-09-20 — Milepost 41 Free Air — HIERARCHY NOTE (Wardell)
+- **Rule:** Free Air must never be the main focus of the ad — plaza + headline own the frame; Free Air is one amenity proof among others (site-correct, realistic, secondary).
+- **Carry forward:** Amenity props = supporting cast. Correct silhouette + placement still lose if the prop becomes the subject.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v6 — FAIL (Wardell placement)
+- **Verdict:** Wardell Fail after Critic Pass — Free Air silhouette improved; **location wrong**
+- **What worked:** Slim digital tower, LCD 32, side coil, own-pad idea
+- **What failed / why:** Machine planted wrong in the scene (camera-forward / wrong lot position vs real plaza siting)
+- **Carry forward:** Prop realism includes **site placement** — free air at forecourt edge / parking amenity zone, away from pumps; not foreground hero between camera and building. Scout placement rules before Generate.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v6 — KEEPER (Critic; pending Wardell)
+- **Verdict:** Critic Pass · keeper — Free Air = slim SS digital tower (LCD 32, +/−, side coil, own pad); not fuel pump / not analog-slop
+- **Pipeline:** Ad Library Scout real OEM refs → PE v6 lock → Runway `gpt_image_2` · ONE render
+- **What worked:** Scout-before-Generate for prop realism; digital tower silhouette; plaza hero preserved
+- **Carry forward:** When props look AI-slop, Scout real machines first; PE locks structure from refs (not “make smaller”); Wardell final visual call
+
+### 2026-09-20 — Milepost 41 Free Air — PROCESS NOTE (Wardell)
+- **Correction:** Problem is **realism**, not size. Do not keep shrinking Free Air as the fix.
+- **Process:** Ad Library Scout must pull **real free-air / tire-inflator** references before the next Generate; PE locks Free Air from that brief (digital gauges common; honest hose coil/hang).
+- **Carry forward:** When a prop looks like AI slop, Scout real-world references first — category silhouette from reality beats prompt adjectives alone.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v4 — SOFT FAIL (Wardell)
+- **Verdict:** Soft reject after Critic Pass — plaza/hero “awesome”; Free Air still AI-slop
+- **Notes:** Prefer **digital** pressure gauge (not big analog); hose must not jut awkwardly toward camera; keep secondary scale
+- **What worked:** Plaza architecture, dusk light, wet asphalt, overall ad hierarchy
+- **Carry forward:** Supporting props need real-world detail (digital gauges common on modern air machines); avoid analog-cliché + protruding hose = AI tell; protect strong plate when iterating one prop
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v4 — KEEPER (Critic; pending Wardell)
+- **Verdict:** Critic Pass · keeper — Free Air secondary tire-inflator (~15%, lower-left); plaza owns frame; fuel separate
+- **Pipeline:** PE v4 after Wardell “too big” reject on v3 · Runway `gpt_image_2` · ONE render
+- **What worked:** Category-correct inflater + smaller scale; plaza hierarchy restored
+- **Carry forward:** Amenity proofs need correct silhouette AND secondary scale; Wardell has final say after Critic
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v3 — FAIL (Wardell composition)
+- **Verdict:** Wardell reject after Critic Pass — Free Air correct as inflater but **too large / dominates the photo**
+- **Pipeline:** gpt_image_2 v3; category-correct prop, bad hierarchy
+- **What worked:** Hose reel + gauge + chuck read as air; fuel islands separate
+- **What failed / why:** Supporting amenity staged as foreground hero — stole frame from plaza + headline
+- **Carry forward:** Amenity proofs must be legible AND secondary; ~mid-ground / corner scale; plaza + type own hierarchy. Correct prop ≠ correct composition.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v3 — KEEPER (Critic; pending Wardell)
+- **Verdict:** Critic Pass · keeper — Free Air reads as tire-inflator (hose reel, gauge, chuck); fuel islands separate
+- **Pipeline:** PE v3 lock after Wardell override on v2 · Runway `gpt_image_2` · `1920:1920` · ONE render
+- **What worked:** Category-correct Free Air silhouette; FREE AIR sign + instructions; fuel pushed mid/bg; amenity stack intact
+- **What failed / why:** v2 false keeper — labeled FREE AIR on dispenser-shaped prop (Wardell catch)
+- **Carry forward:** Props must match category shape, not just labels; Wardell visual check can override Critic; air ≠ fuel pump island
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v2 — FAIL (Wardell override)
+- **Verdict:** Wardell override after Critic Pass — Free Air prop reads as a **fuel pump**, not an air station
+- **Pipeline:** gpt_image_2 redo v2; FREE AIR sign present but machine silhouette wrong
+- **What worked:** Sign text readable; other amenities; Critic caught missing Free Air on v1
+- **What failed / why:** Prop design ambiguous — dispenser-shaped unit with bollards reads as another fuel pump despite FREE AIR label
+- **Carry forward:** Amenity props must match category silhouette (air = hose reel + gauge + chuck; fuel = dispenser island). Labels alone don’t fix wrong shape. Wardell visual check can override Critic keeper.
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset v2 — KEEPER
+- **Verdict:** Critic Pass · keeper (Free Air upright sign + hose station readable)
+- **Pipeline:** high-end-photoreal-ads (`cinematic-outdoor-hero`) + Copywriter + PE v2 · Runway `gpt_image_2` · `1920:1920` · ONE redo after Critic Fail
+- **What worked:** Amenity-stack structure; every benefit bar item staged in-frame (incl. FREE AIR sign + hose); fictional Milepost 41 lock; finished ad hierarchy; lean single redo
+- **What failed / why:** v1 Critic Fail — Free Air named in type but not legible in scene (fixed in v2 PE lock)
+- **Carry forward:** Amenity claims in copy require visible in-scene proof before Generate; Critic Fail → PE pack fix → one redo only
+
+### 2026-09-20 — Milepost 41 / Mile-One Reset — FAIL (redo)
+- **Verdict:** Critic Fail · redo required
+- **Pipeline:** high-end-photoreal-ads (`cinematic-outdoor-hero`) + Copywriter + PE · Runway `gpt_image_2` · `1920:1920` · ONE render
+- **What worked:** Finished ad structure; Milepost 41 brand lock; headline/benefit/CTA present; fuel, hot food, RV dump, overnight parking readable; photoreal dusk hero
+- **What failed / why:** Benefit bar lists Free Air but scene lacked a readable Free Air station/sign — Critic requires amenity claims to be staged in-frame
+- **Carry forward:** Every benefit named in type must have a clear in-scene proof (sign or prop); PE pack-lock checklist amenity-by-amenity before Generate
+
 ### 2026-09-20 — Northline Travel Plaza — KEEPER
 - **Verdict:** Critic Pass · Wardell pending (Critic keeper)
 - **Pipeline:** high-end-photoreal-ads (`cinematic-outdoor-hero`) + benefit-led DNA · PE green-light · Runway `gpt_image_2` · `1920:1920` · ONE render

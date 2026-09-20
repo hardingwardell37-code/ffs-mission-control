@@ -87,3 +87,7 @@ Agents:
 ## Studio learning loop
 
 Before Generate and after every Critic/Wardell verdict, run [`studio-learning-loop`](studio-learning-loop/SKILL.md) and update [`studio-learning-loop/LEARNING_LOG.md`](studio-learning-loop/LEARNING_LOG.md). Keepers and fails (with **why**) live there so the roster improves over time.
+
+## Runway video (2026-09-20)
+
+`generating-ad-videos` includes **Runway commercial lessons** (Pro vs Dev API credits, gen4_turbo/gen4.5, mute-test plaza opens, silent I2V + audio post). Learning log: `studio-learning-loop/LEARNING_LOG.md`.
