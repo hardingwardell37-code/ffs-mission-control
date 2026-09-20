@@ -5,7 +5,7 @@
 **Product name:** F&P Studio  
 **Technical identity:** `ffs-mission-control` (repo, Netlify, health `service`)
 
-Phase 2 adds **generation jobs**, a **provider interface layer**, and scaffolding for **Runway Gen-4 Image**, **Grok Imagine** (xAI), OpenAI Image, Google Omni, and fal.ai MiniMax H3 / H3 Max. Real API calls run only when server keys are present; missing keys return clear `not_configured` failures (never fake successes).
+Phase 2 adds **generation jobs**, a **provider interface layer**, and scaffolding for **Runway Image** (default turbo), **Grok Imagine** (xAI), OpenAI Image, Google Omni, and fal.ai MiniMax H3 / H3 Max. Real API calls run only when server keys are present; missing keys return clear `not_configured` failures (never fake successes).
 
 This remains a **personal studio** — not multi-tenant SaaS. No billing.
 
@@ -23,11 +23,11 @@ This remains a **personal studio** — not multi-tenant SaaS. No billing.
 2. **Provider layer** `lib/generation/`
    - `types.ts` — `JobRequest` / `JobResult` / `GenerationProvider`
    - `router.ts` — Auto selection by modality + env availability
-   - `providers/runway.ts` — image via Runway Gen-4 (`RUNWAYML_API_SECRET`; poll `/v1/tasks/{id}`)
+   - `providers/runway.ts` — image via Runway (`RUNWAYML_API_SECRET`; default `gen4_image_turbo`; promptText ≤1000 UTF-16; poll `/v1/tasks/{id}`)
    - `providers/grok-imagine.ts` — image + video via xAI Imagine API (`XAI_API_KEY`)
    - `providers/openai-image.ts`, `google-omni.ts`, `fal-minimax.ts`
 3. **Server actions** — `createGenerationJob`, `runGenerationJob`, `cancelGenerationJob` (list via campaign page query)
-4. **UI** — Campaign **Generate** tab: modality, provider (incl Auto + Runway Gen-4 Image + Grok Imagine), prompt, negative, references, locks, job list
+4. **UI** — Campaign **Generate** tab: modality, provider (incl Auto + Runway + Grok Imagine), model select (turbo/muse/gen4 credits), prompt, negative, references, locks, job list
 5. **Health** — `phase: phase-2-generation` (service + product unchanged)
 6. **Originality** — UI copy + light prompt guard against “exact copy of this ad” style asks
 
@@ -62,7 +62,7 @@ Never put these in client bundles. Set on Netlify → Site settings → Environm
 
 | Variable | Provider |
 | --- | --- |
-| `RUNWAYML_API_SECRET` | Runway Gen-4 Image (primary; set on Netlify) |
+| `RUNWAYML_API_SECRET` | Runway Image (primary; default `gen4_image_turbo`; set on Netlify) |
 | `RUNWAY_API_KEY` | Optional alias for `RUNWAYML_API_SECRET` |
 | `XAI_API_KEY` | Grok Imagine (image + video) |
 | `OPENAI_API_KEY` | OpenAI Image |
@@ -78,12 +78,12 @@ Without keys, creating a job and running it **fails with `not_configured`** — 
 
 | Modality | Preference order |
 | --- | --- |
-| `image` | Runway Gen-4 → Grok Imagine → OpenAI Image → Google Omni |
+| `image` | Runway (turbo default) → Grok Imagine → OpenAI Image → Google Omni |
 | `video` | fal MiniMax H3 → Grok Imagine → Google Omni |
 
 Explicit provider selection still requires that provider’s key.
 
-- **Runway Gen-4 Image** → `POST https://api.dev.runwayml.com/v1/text_to_image` (`model: gen4_image`, ratio e.g. `1080:1080`) + poll `GET /v1/tasks/{id}` until `SUCCEEDED` / `FAILED` (header `X-Runway-Version: 2024-11-06`). Image only — video not wired in this phase.
+- **Runway Image** → `POST https://api.dev.runwayml.com/v1/text_to_image` (default `model: gen4_image_turbo` · 2 credits; also `muse_image` · 1, `gen4_image` · 5–8; ratio e.g. `1080:1080` for 1:1) + poll `GET /v1/tasks/{id}` until `SUCCEEDED` / `FAILED` (header `X-Runway-Version: 2024-11-06`). **`promptText` ≤1000 UTF-16 code units** — over-limit fails with a clear `provider_error` (no silent main-prompt truncation). Image only — video not wired in this phase.
 - **Grok Imagine** image → `POST https://api.x.ai/v1/images/generations` (default model `grok-imagine-image`)
 - **Grok Imagine** video → `POST https://api.x.ai/v1/videos/generations` + poll (default model `grok-imagine-video`)
 - H3 maps to fal `hailuo-2.3/standard/text-to-video`; H3 Max → `…/pro/text-to-video`
