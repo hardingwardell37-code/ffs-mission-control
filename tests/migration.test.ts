@@ -112,3 +112,57 @@ describe("runway provider migration", () => {
   });
 });
 
+
+const sql0007 = readFileSync(
+  new URL("../supabase/migrations/0007_studio_jobs.sql", import.meta.url),
+  "utf8",
+);
+
+describe("studio jobs migration (Job Operator Phase 0)", () => {
+  it("creates studio job tables", () => {
+    for (const table of ["studio_jobs", "brief_analyses", "job_workflows", "job_revisions"]) {
+      expect(sql0007).toContain(`create table public.${table}`);
+    }
+  });
+
+  it("defines source, status, and decision enums", () => {
+    expect(sql0007).toContain("studio_job_source");
+    expect(sql0007).toContain("'upwork'");
+    expect(sql0007).toContain("'intake'");
+    expect(sql0007).toContain("studio_job_status");
+    expect(sql0007).toContain("'needs_review'");
+    expect(sql0007).toContain("studio_job_decision");
+    expect(sql0007).toContain("'accept'");
+  });
+
+  it("reuses org membership helpers for RLS", () => {
+    expect(sql0007).toContain("is_org_member");
+    expect(sql0007).toContain("can_manage_org");
+    expect(sql0007).toContain("studio_jobs_read_org");
+  });
+
+  it("adds nullable studio_job_id on generation_jobs", () => {
+    expect(sql0007).toContain("add column studio_job_id");
+    expect(sql0007).toContain("generation_jobs_studio_job_idx");
+    expect(sql0007).toContain("validate_generation_job_studio_job_org");
+  });
+
+  it("documents job approval action_key vocabulary", () => {
+    expect(sql0007).toContain("job_workflow");
+    expect(sql0007).toContain("job_budget");
+    expect(sql0007).toContain("job_rights");
+    expect(sql0007).toContain("job_delivery");
+  });
+
+  it("does not introduce higgsfield or marketplace automation", () => {
+    const ddl = sql0007
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n")
+      .toLowerCase();
+    expect(ddl).not.toContain("higgsfield");
+    expect(ddl).not.toContain("scrape");
+    expect(ddl).not.toContain("auto_apply");
+    expect(ddl).not.toContain("auto-apply");
+  });
+});

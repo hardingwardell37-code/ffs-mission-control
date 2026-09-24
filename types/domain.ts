@@ -102,3 +102,115 @@ export interface GenerationJob {
   createdAt: string;
   updatedAt: string;
 }
+
+export type StudioJobSource =
+  | "upwork"
+  | "fiverr"
+  | "contra"
+  | "email"
+  | "intake"
+  | "other";
+
+export type StudioJobStatus =
+  | "new"
+  | "needs_review"
+  | "approved"
+  | "generating"
+  | "qa"
+  | "delivered"
+  | "rejected";
+
+export type StudioJobDecision = "accept" | "review" | "reject";
+
+export type JobWorkflowApprovalStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "rejected";
+
+export type JobRevisionApprovalStatus = JobWorkflowApprovalStatus;
+
+export type StudioJobApprovalActionKey =
+  | "job_workflow"
+  | "job_budget"
+  | "job_rights"
+  | "job_delivery";
+
+export interface StudioJob {
+  id: string;
+  organizationId: string;
+  campaignId: string | null;
+  createdBy: string | null;
+  title: string;
+  source: StudioJobSource;
+  rawBrief: string;
+  clientNotes: string;
+  clientBudgetCents: number | null;
+  quotedPriceCents: number | null;
+  maxProductionBudgetCents: number | null;
+  channelFeeBps: number;
+  contingencyBps: number;
+  deadline: string | null;
+  status: StudioJobStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BriefAnalysis {
+  id: string;
+  studioJobId: string;
+  organizationId: string;
+  deliverables: unknown[];
+  dimensions: unknown[];
+  durations: unknown[];
+  references: unknown[];
+  exactText: unknown[];
+  brandConstraints: unknown[];
+  rightsConcerns: unknown[];
+  missingInformation: unknown[];
+  confidence: number | null;
+  decision: StudioJobDecision;
+  rationale: string;
+  modelUsed: string;
+  analysisJson: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface JobWorkflowStep {
+  order: number;
+  modality: string;
+  provider: string;
+  model: string;
+  purpose: string;
+  inputs: unknown;
+  expectedOutputs: unknown;
+  estimatedAttempts: number;
+  unitCostCents: number;
+  estimatedTotalCents: number;
+}
+
+export interface JobWorkflow {
+  id: string;
+  studioJobId: string;
+  organizationId: string;
+  steps: JobWorkflowStep[] | unknown[];
+  estimatedTotalCostCents: number | null;
+  approvalStatus: JobWorkflowApprovalStatus;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobRevision {
+  id: string;
+  studioJobId: string;
+  organizationId: string;
+  clientNote: string;
+  affectedDeliverable: string;
+  recommendedAction: string;
+  expectedIncrementalCostCents: number | null;
+  approvalStatus: JobRevisionApprovalStatus;
+  createdAt: string;
+  updatedAt: string;
+}

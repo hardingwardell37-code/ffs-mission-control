@@ -58,3 +58,19 @@ assets_preview:
     - thumbnails render for image/video assets that have a preview or storage URL
     - full-size open uses the asset source/preview URL in a new tab or equivalent
     - provenance fields remain visible where present
+
+# Job Operator — Phase 0 schema + domain only. No /jobs UI yet (Phase 1).
+job_operator:
+  path: /jobs
+  requires_auth: true
+  status: phase_0_schema_only
+  entry: not wired in nav yet — Phase 1 adds kanban / intake UI
+  flows:
+    - phase_0: migration 0007 + lib/domain/studio-job + lib/studio-jobs repository
+    - phase_1_pending: list/create jobs by status, brief analysis + workflow approval surfaces
+  invariants:
+    - no marketplace scrape, auto-apply, message, accept, or delivery automation
+    - no Higgsfield provider
+    - brief analysis model_used defaults to mock until a real provider ships
+    - generation_jobs.campaign_id remains required; studio_job_id is optional link
+    - product name remains F&P Studio; Job Operator is the module name
