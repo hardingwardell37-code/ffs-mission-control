@@ -63,7 +63,9 @@ Default contingency is **1000 bps (10%)** on estimated generation spend. Channel
 
 ---
 
-## Phase 1 preview
+## Phase 1
+
+**Shipped** on branch `fp-studio/job-operator-phase-1` — see [`JOB_OPERATOR_PHASE1.md`](./JOB_OPERATOR_PHASE1.md).
 
 - `/jobs` board by `studio_job_status`
 - Manual intake form → `createStudioJob`

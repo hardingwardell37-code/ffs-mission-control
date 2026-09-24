@@ -59,18 +59,23 @@ assets_preview:
     - full-size open uses the asset source/preview URL in a new tab or equivalent
     - provenance fields remain visible where present
 
-# Job Operator — Phase 0 schema + domain only. No /jobs UI yet (Phase 1).
+# Job Operator — Phase 1 UI on Phase 0 schema.
 job_operator:
   path: /jobs
   requires_auth: true
-  status: phase_0_schema_only
-  entry: not wired in nav yet — Phase 1 adds kanban / intake UI
+  status: phase_1_ui
+  entry: nav "Jobs" or open /jobs after login (requires migration 0007)
   flows:
-    - phase_0: migration 0007 + lib/domain/studio-job + lib/studio-jobs repository
-    - phase_1_pending: list/create jobs by status, brief analysis + workflow approval surfaces
+    - board: /jobs columns by studio_job_status; cards open /jobs/[id]
+    - intake: /jobs/new -> createStudioJobAction (+ optional mock analysis)
+    - detail_tabs: brief | decision | workflow | costs | outputs | revisions (?tab=)
+    - seed_demos: empty board "Seed demo jobs" inserts two fixture briefs (idempotent by title)
+    - missing_migration: clear empty/error pointing at 0007_studio_jobs.sql — do not crash shell
   invariants:
     - no marketplace scrape, auto-apply, message, accept, or delivery automation
     - no Higgsfield provider
-    - brief analysis model_used defaults to mock until a real provider ships
+    - brief analysis model_used is mock only in Phase 1 (never claim Astra)
+    - never fake successful media generation
     - generation_jobs.campaign_id remains required; studio_job_id is optional link
     - product name remains F&P Studio; Job Operator is the module name
+    - workflow draft providers limited to existing studio set (runway, grok_imagine, fal_*, openai_image)
