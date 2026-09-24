@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireContext } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
-import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaignDna, parseGenerationJob, parseResearchSource, parseTask } from "@/lib/validation";
+import { parseAgent, parseAsset, parseCampaign, parseCampaignBrief, parseCampaignDna, parseGenerationJob, parseJobRevision, parseResearchSource, parseStudioJob, parseTask } from "@/lib/validation";
 import { assertApprovalResolution } from "@/lib/domain/approval";
 import { defaultSectionForModality, defaultSectionForRole } from "@/lib/domain/campaign";
 import { runGenerationRequest } from "@/lib/generation";
@@ -17,6 +17,21 @@ import {
   fetchRemoteMedia,
   uploadGeneratedBytes,
 } from "@/lib/storage/campaign-assets";
+
+import {
+  DEMO_JOB_FIXTURES,
+  DEMO_JOB_TITLES,
+  addJobRevision,
+  analysisForDemoFixture,
+  createStudioJob,
+  demoFixtureToCreateInput,
+  findStudioJobsByTitles,
+  getStudioJob,
+  mockAnalyzeBrief,
+  updateStudioJobStatus,
+  upsertBriefAnalysis,
+  upsertJobWorkflow,
+} from "@/lib/studio-jobs";
 
 export async function createAgent(form: FormData) {
   const ctx = await requireContext(); const values = parseAgent(form);
@@ -568,3 +583,192 @@ export async function cancelGenerationJob(form: FormData) {
   });
   revalidatePath(`/campaigns/${campaignId || job.campaign_id}`);
 }
+
+export async function createStudioJobAction(form: FormData) {
+  const ctx = await requireContext();
+  const values = parseStudioJob(form);
+  const job = await createStudioJob(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    createdBy: ctx.user.id,
+    title: values.title,
+    rawBrief: values.raw_brief,
+    source: values.source,
+    clientNotes: values.client_notes,
+    clientBudgetCents: values.client_budget_cents,
+    quotedPriceCents: values.quoted_price_cents,
+    maxProductionBudgetCents: values.max_production_budget_cents,
+    channelFeeBps: values.channel_fee_bps,
+    contingencyBps: values.contingency_bps,
+    deadline: values.deadline,
+    status: values.run_mock_analysis ? "needs_review" : "new",
+  });
+
+  if (values.run_mock_analysis) {
+    const analysis = mockAnalyzeBrief(values.raw_brief, values.title);
+    await upsertBriefAnalysis(ctx.supabase, {
+      studioJobId: job.id,
+      organizationId: ctx.organizationId,
+      deliverables: analysis.deliverables,
+      dimensions: analysis.dimensions,
+      durations: analysis.durations,
+      references: analysis.references,
+      exactText: analysis.exactText,
+      brandConstraints: analysis.brandConstraints,
+      rightsConcerns: analysis.rightsConcerns,
+      missingInformation: analysis.missingInformation,
+      confidence: analysis.confidence,
+      decision: analysis.decision,
+      rationale: analysis.rationale,
+      modelUsed: analysis.modelUsed,
+      analysisJson: analysis.analysisJson,
+    });
+    await upsertJobWorkflow(ctx.supabase, {
+      studioJobId: job.id,
+      organizationId: ctx.organizationId,
+      steps: analysis.steps,
+      estimatedTotalCostCents: analysis.estimatedTotalCostCents,
+      approvalStatus: "draft",
+    });
+  }
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "studio_job.created",
+    entityType: "studio_job",
+    entityId: job.id,
+    metadata: { source: values.source, mockAnalysis: values.run_mock_analysis },
+  });
+  revalidatePath("/jobs");
+  redirect(`/jobs/${job.id}`);
+}
+
+export async function runMockJobAnalysis(form: FormData) {
+  const ctx = await requireContext();
+  const studioJobId = String(form.get("studioJobId") ?? "");
+  if (!studioJobId) throw new Error("Job is required");
+  const job = await getStudioJob(ctx.supabase, ctx.organizationId, studioJobId);
+  if (!job) throw new Error("Job not found");
+
+  const analysis = mockAnalyzeBrief(String(job.raw_brief ?? ""), String(job.title ?? ""));
+  await upsertBriefAnalysis(ctx.supabase, {
+    studioJobId,
+    organizationId: ctx.organizationId,
+    deliverables: analysis.deliverables,
+    dimensions: analysis.dimensions,
+    durations: analysis.durations,
+    references: analysis.references,
+    exactText: analysis.exactText,
+    brandConstraints: analysis.brandConstraints,
+    rightsConcerns: analysis.rightsConcerns,
+    missingInformation: analysis.missingInformation,
+    confidence: analysis.confidence,
+    decision: analysis.decision,
+    rationale: analysis.rationale,
+    modelUsed: analysis.modelUsed,
+    analysisJson: analysis.analysisJson,
+  });
+  await upsertJobWorkflow(ctx.supabase, {
+    studioJobId,
+    organizationId: ctx.organizationId,
+    steps: analysis.steps,
+    estimatedTotalCostCents: analysis.estimatedTotalCostCents,
+    approvalStatus: "draft",
+  });
+  if (job.status === "new") {
+    await updateStudioJobStatus(ctx.supabase, ctx.organizationId, studioJobId, "needs_review");
+  }
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "studio_job.mock_analysis",
+    entityType: "studio_job",
+    entityId: studioJobId,
+    metadata: { modelUsed: "mock", decision: analysis.decision },
+  });
+  revalidatePath(`/jobs/${studioJobId}`);
+  redirect(`/jobs/${studioJobId}?tab=decision`);
+}
+
+export async function addStudioJobRevision(form: FormData) {
+  const ctx = await requireContext();
+  const studioJobId = String(form.get("studioJobId") ?? "");
+  if (!studioJobId) throw new Error("Job is required");
+  const job = await getStudioJob(ctx.supabase, ctx.organizationId, studioJobId);
+  if (!job) throw new Error("Job not found");
+  const values = parseJobRevision(form);
+  const revision = await addJobRevision(ctx.supabase, {
+    studioJobId,
+    organizationId: ctx.organizationId,
+    clientNote: values.client_note,
+    affectedDeliverable: values.affected_deliverable,
+    recommendedAction: values.recommended_action,
+    expectedIncrementalCostCents: values.expected_incremental_cost_cents,
+  });
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "studio_job.revision_added",
+    entityType: "studio_job",
+    entityId: studioJobId,
+    metadata: { revisionId: revision.id },
+  });
+  revalidatePath(`/jobs/${studioJobId}`);
+  redirect(`/jobs/${studioJobId}?tab=revisions`);
+}
+
+export async function seedDemoStudioJobs() {
+  const ctx = await requireContext();
+  const existing = await findStudioJobsByTitles(
+    ctx.supabase,
+    ctx.organizationId,
+    [...DEMO_JOB_TITLES],
+  );
+  const existingTitles = new Set(existing.map((r) => String(r.title)));
+  let created = 0;
+
+  for (const fixture of DEMO_JOB_FIXTURES) {
+    if (existingTitles.has(fixture.title)) continue;
+    const input = demoFixtureToCreateInput(fixture, ctx.organizationId, ctx.user.id);
+    const job = await createStudioJob(ctx.supabase, input);
+    const analysis = analysisForDemoFixture(fixture);
+    await upsertBriefAnalysis(ctx.supabase, {
+      studioJobId: job.id,
+      organizationId: ctx.organizationId,
+      deliverables: analysis.deliverables,
+      dimensions: analysis.dimensions,
+      durations: analysis.durations,
+      references: analysis.references,
+      exactText: analysis.exactText,
+      brandConstraints: analysis.brandConstraints,
+      rightsConcerns: analysis.rightsConcerns,
+      missingInformation: analysis.missingInformation,
+      confidence: analysis.confidence,
+      decision: analysis.decision,
+      rationale: analysis.rationale,
+      modelUsed: analysis.modelUsed,
+      analysisJson: analysis.analysisJson,
+    });
+    await upsertJobWorkflow(ctx.supabase, {
+      studioJobId: job.id,
+      organizationId: ctx.organizationId,
+      steps: analysis.steps,
+      estimatedTotalCostCents: analysis.estimatedTotalCostCents,
+      approvalStatus: "draft",
+    });
+    created += 1;
+  }
+
+  await writeAudit(ctx.supabase, {
+    organizationId: ctx.organizationId,
+    actorId: ctx.user.id,
+    eventType: "studio_job.demo_seeded",
+    entityType: "studio_job",
+    entityId: ctx.organizationId,
+    metadata: { created, skipped: DEMO_JOB_FIXTURES.length - created },
+  });
+  revalidatePath("/jobs");
+  redirect("/jobs");
+}
+

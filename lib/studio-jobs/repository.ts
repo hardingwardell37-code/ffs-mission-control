@@ -185,3 +185,98 @@ export async function addJobRevision(supabase: SupabaseClient, input: AddJobRevi
   throwOnError(error);
   return data;
 }
+
+export async function updateStudioJobStatus(
+  supabase: SupabaseClient,
+  organizationId: string,
+  studioJobId: string,
+  status: StudioJobStatus,
+) {
+  const { data, error } = await supabase
+    .from("studio_jobs")
+    .update({ status })
+    .eq("id", studioJobId)
+    .eq("organization_id", organizationId)
+    .select("*")
+    .single();
+  throwOnError(error);
+  return data;
+}
+
+export async function getBriefAnalysis(
+  supabase: SupabaseClient,
+  organizationId: string,
+  studioJobId: string,
+) {
+  const { data, error } = await supabase
+    .from("brief_analyses")
+    .select("*")
+    .eq("studio_job_id", studioJobId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  throwOnError(error);
+  return data;
+}
+
+export async function getJobWorkflow(
+  supabase: SupabaseClient,
+  organizationId: string,
+  studioJobId: string,
+) {
+  const { data, error } = await supabase
+    .from("job_workflows")
+    .select("*")
+    .eq("studio_job_id", studioJobId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  throwOnError(error);
+  return data;
+}
+
+export async function listJobRevisions(
+  supabase: SupabaseClient,
+  organizationId: string,
+  studioJobId: string,
+) {
+  const { data, error } = await supabase
+    .from("job_revisions")
+    .select("*")
+    .eq("studio_job_id", studioJobId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+  throwOnError(error);
+  return data ?? [];
+}
+
+export async function listGenerationJobsForStudioJob(
+  supabase: SupabaseClient,
+  organizationId: string,
+  studioJobId: string,
+) {
+  const { data, error } = await supabase
+    .from("generation_jobs")
+    .select(
+      "id,modality,provider,model_name,status,prompt,error_message,result_asset_id,campaign_id,created_at,completed_at",
+    )
+    .eq("studio_job_id", studioJobId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  throwOnError(error);
+  return data ?? [];
+}
+
+export async function findStudioJobsByTitles(
+  supabase: SupabaseClient,
+  organizationId: string,
+  titles: string[],
+) {
+  if (!titles.length) return [];
+  const { data, error } = await supabase
+    .from("studio_jobs")
+    .select("id,title")
+    .eq("organization_id", organizationId)
+    .in("title", titles);
+  throwOnError(error);
+  return data ?? [];
+}

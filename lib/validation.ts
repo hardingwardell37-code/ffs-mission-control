@@ -1,4 +1,5 @@
 import { ASSET_OWNERSHIP, ASSET_ROLES, CAMPAIGN_ENTRY_MODES, GENERATION_MODALITIES, GENERATION_PROVIDERS, slugifyCampaignName } from "./domain/campaign";
+import { isStudioJobSource } from "./domain/studio-job";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -163,3 +164,55 @@ export function parseGenerationJob(form: FormData) {
     settings: {} as Record<string, unknown>,
   };
 }
+
+function dollarsToCents(raw: FormDataEntryValue | null, label: string): number | null {
+  const textValue = typeof raw === "string" ? raw.trim() : "";
+  if (!textValue) return null;
+  const dollars = Number(textValue.replace(/[$,]/g, ""));
+  if (!Number.isFinite(dollars) || dollars < 0) throw new Error(`${label} must be a non-negative number`);
+  return Math.round(dollars * 100);
+}
+
+function optionalBps(raw: FormDataEntryValue | null, fallback: number): number {
+  const textValue = typeof raw === "string" ? raw.trim() : "";
+  if (!textValue) return fallback;
+  const n = Number(textValue);
+  if (!Number.isFinite(n) || n < 0 || n > 10000) throw new Error("Basis points must be between 0 and 10000");
+  return Math.trunc(n);
+}
+
+export function parseStudioJob(form: FormData) {
+  const source = required(form.get("source"), "Source", 32);
+  if (!isStudioJobSource(source)) throw new Error("Invalid job source");
+  const runMock = form.get("runMockAnalysis") === "on" || form.get("runMockAnalysis") === "true";
+  const deadlineRaw = optional(form.get("deadline"), 40);
+  let deadline: string | null = null;
+  if (deadlineRaw) {
+    const d = new Date(deadlineRaw);
+    if (Number.isNaN(d.getTime())) throw new Error("Invalid deadline");
+    deadline = d.toISOString();
+  }
+  return {
+    title: required(form.get("title"), "Title", 200),
+    source,
+    raw_brief: required(form.get("rawBrief"), "Brief", 50000),
+    client_notes: optional(form.get("clientNotes"), 20000),
+    client_budget_cents: dollarsToCents(form.get("clientBudgetDollars"), "Client budget"),
+    quoted_price_cents: dollarsToCents(form.get("quotedPriceDollars"), "Quoted price"),
+    max_production_budget_cents: dollarsToCents(form.get("maxProductionBudgetDollars"), "Max production budget"),
+    channel_fee_bps: optionalBps(form.get("channelFeeBps"), 0),
+    contingency_bps: optionalBps(form.get("contingencyBps"), 1000),
+    deadline,
+    run_mock_analysis: runMock,
+  };
+}
+
+export function parseJobRevision(form: FormData) {
+  return {
+    client_note: required(form.get("clientNote"), "Client note", 8000),
+    affected_deliverable: optional(form.get("affectedDeliverable"), 400),
+    recommended_action: optional(form.get("recommendedAction"), 4000),
+    expected_incremental_cost_cents: dollarsToCents(form.get("expectedIncrementalCostDollars"), "Incremental cost"),
+  };
+}
+

@@ -3,6 +3,7 @@ import Link from "next/link";
 const items = [
   ["/", "Overview"],
   ["/campaigns", "Campaigns"],
+  ["/jobs", "Jobs"],
   ["/agents", "Agents"],
   ["/tasks", "Tasks"],
   ["/approvals", "Approvals"],

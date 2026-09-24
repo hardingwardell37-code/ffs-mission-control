@@ -89,3 +89,24 @@ input:focus,textarea:focus,select:focus { outline:2px solid rgba(255,107,26,.35)
 .asset-thumb.compact img, .asset-thumb.compact video { max-width:160px; aspect-ratio:4/3; }
 .asset-open { font-size:12px; color:var(--accent); text-decoration:underline; text-underline-offset:2px; width:fit-content; }
 .job-result-preview { margin-top:10px; }
+
+/* Job Operator board */
+.job-board { display:grid; grid-template-columns:repeat(7,minmax(180px,1fr)); gap:12px; overflow-x:auto; padding-bottom:8px; }
+.job-column { border:1px solid var(--line); border-radius:12px; background:rgba(18,22,26,.88); min-height:220px; display:flex; flex-direction:column; min-width:180px; }
+.job-column-head { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#dce2e7; }
+.job-column-body { display:grid; gap:10px; padding:12px; align-content:start; flex:1; }
+.job-column-empty { color:var(--muted); font-size:12px; text-align:center; padding:18px 0; }
+.job-card { display:grid; gap:4px; border:1px solid var(--line); border-radius:10px; padding:12px; background:linear-gradient(180deg, rgba(24,29,34,.95), rgba(17,21,25,.96)); }
+.job-card:hover { border-color:#3a444e; }
+.brief-block { white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; line-height:1.55; color:#d5dce2; background:#0d1114; border:1px solid var(--line); border-radius:8px; padding:14px; max-height:480px; overflow:auto; margin:8px 0 0; }
+.plain-list { margin:6px 0 0; padding-left:18px; color:#c7ced4; font-size:14px; line-height:1.5; }
+.plain-list.numbered { list-style:decimal; }
+.gate-chip { color:var(--warning); border-color:rgba(241,198,107,.35); }
+.row.workflow-row { grid-template-columns:.35fr 1.6fr .9fr .7fr; }
+.cost-grid { margin-top:16px; }
+.badge.new, .badge.needs_review { color:var(--warning); border-color:rgba(241,198,107,.3); }
+.badge.generating, .badge.qa { color:var(--accent); border-color:rgba(255,107,26,.35); }
+.badge.delivered, .badge.accept { color:var(--success); border-color:rgba(105,211,156,.3); }
+.badge.review { color:var(--warning); border-color:rgba(241,198,107,.3); }
+@media (max-width: 1200px){ .job-board{grid-template-columns:repeat(4,minmax(180px,1fr))} }
+@media (max-width: 720px){ .job-board{grid-template-columns:repeat(2,minmax(160px,1fr))} .row.workflow-row{grid-template-columns:1fr} }
