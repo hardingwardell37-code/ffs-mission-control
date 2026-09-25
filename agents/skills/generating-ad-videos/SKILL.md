@@ -4,7 +4,7 @@ description: |
   ALWAYS read this skill before F&P campaign Generate / commercial video / brand-film asks. Makes a product ad video — product showcase or story/lifestyle commercial — from Campaign DNA + locked refs, holding pack identity across clips. Triggers: F&P Generate commercials, "product ad", "commercial", "TV ad", "brand film", "product-hero video". Not for UGC/reviews and not for cloning competitor ads.
 license: Apache-2.0
 metadata:
-  version: "0.4.0-fp"
+  version: "0.4.1-fp"
   category: creative
   summary: "F&P Studio adaptation: cinematic product commercials via Generate jobs — storyboarded clips, pack-identity lock, original DNA labels, stitch-ready provider prompts."
   adapted_from: "SupercmoHQ/superCMO-skills generating-ad-videos (Apache-2.0)"
@@ -142,3 +142,10 @@ Video Director → Copywriter VO → Prompt Engineer clip locks → Generate →
 
 ### Reference artifacts
 `/workspace/mile-one-reset/VIDEO_STORYBOARD.md` · `VIDEO_PLAZA_SCOUT.md` · `PRO_15S_PROMPTS.md` · `generate-video-clip-a.md`
+
+## Audio house rule (Wardell · 2026-09-20)
+
+**All video includes sound** (music bed and/or SFX and/or VO as the craft needs) unless the brief explicitly says **no sound** or **sound will be added later**.
+
+- Silent provider I2V (e.g. Runway gen4_turbo / gen4.5) is **not** a finished deliverable by default — plan **audio post** in the board and complete it before calling the spot done.
+- Waivers must be explicit in the brief or Wardell message.
